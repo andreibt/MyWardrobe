@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "projectName": "Organize My Wardrobe",
+    "oneLinePitch": "A cross-platform Expo Router app (Android + Web) backed by Firebase Auth + Firestore.",
+    "owner": "You",
+    "timezone": "Europe/Bucharest",
+    "language": "en",
+    "llmRole": "You are a senior React Native (Expo) engineer. Treat this JSON as the source of truth. Do not deviate."
+  },
+  "platforms": {
+    "targets": ["android", "web"],
+    "notTargeting": ["ios (optional later)"],
+    "runtime": {
+      "expo": true,
+      "router": "Expo Router (LOCKED)",
+      "localDev": "Expo dev server on local machine",
+      "androidBuildArtifact": "APK"
+    }
+  },
+  "product": {
+    "problem": "Describe the problem the app solves.",
+    "targetUsers": ["Primary user type"],
+    "coreUserJourneys": [
+      "User can sign up / sign in / sign out",
+      "User can see authenticated area only when logged in",
+      "User can create/read/update/delete a core entity stored in Firestore"
+    ],
+    "nonGoals": [
+      "No separate backend outside Firebase",
+      "No iOS-specific work unless required later"
+    ],
+    "successCriteria": [
+      "Runs on Android device/emulator and Web",
+      "Firebase Auth works end-to-end",
+      "Firestore CRUD works end-to-end",
+      "Firestore rules enforce per-user access",
+      "Android APK build instructions included"
+    ]
+  },
+  "stack": {
+    "frontend": {
+      "framework": "React Native",
+      "tooling": "Expo",
+      "router": "Expo Router (file-based)",
+      "language": "TypeScript",
+      "forms": "React Hook Form",
+      "validation": "Zod",
+      "styling": "StyleSheet (with shared tokens)",
+      "notes": [
+        "Prefer Expo-compatible dependencies only",
+        "Hard requirement: Android + Web compatibility"
+      ]
+    },
+    "backend": {
+      "provider": "Firebase",
+      "services": {
+        "auth": "Firebase Authentication (email/password first)",
+        "database": "Cloud Firestore",
+        "storage": "Firebase Storage (only if needed)",
+        "functions": "Cloud Functions (only if needed)"
+      }
+    },
+    "deployment": {
+      "localDev": "npx expo start",
+      "android": {
+        "artifact": "APK",
+        "buildTool": "EAS Build",
+        "notes": ["Document exact EAS commands in README"]
+      },
+      "web": {
+        "runMode": "npx expo start --web",
+        "hosting": "optional later"
+      }
+    }
+  },
+  "architecture": {
+    "pattern": "Feature-first with Expo Router route groups",
+    "folders": {
+      "routes": [
+        "app/(auth)/login.tsx",
+        "app/(auth)/register.tsx",
+        "app/(app)/_layout.tsx (protected area)",
+        "app/(app)/(tabs)/home.tsx",
+        "app/(app)/(tabs)/settings.tsx",
+        "app/_layout.tsx (root provider + auth gate)"
+      ],
+      "src": [
+        "src/lib/firebase.ts",
+        "src/lib/auth.ts",
+        "src/lib/firestore/todos.ts",
+        "src/providers/AuthProvider.tsx",
+        "src/theme/tokens.ts",
+        "src/components/*"
+      ],
+      "firebase": [
+        "firestore.rules",
+        "firestore.indexes.json (if needed)"
+      ]
+    },
+    "rules": [
+      "No business logic inside screens; use src/lib/*",
+      "Centralize Firebase init in src/lib/firebase.ts",
+      "All Firestore reads/writes must go through a small lib layer",
+      "Auth-gated navigation must be enforced with Expo Router layouts"
+    ]
+  },
+  "firebase": {
+    "sdk": "firebase modular v9+",
+    "auth": {
+      "methods": ["emailPassword"],
+      "requirements": [
+        "Auth state listener with loading state",
+        "Protected route group for signed-in users",
+        "Consistent error messages for auth failures"
+      ]
+    },
+    "firestore": {
+      "conventions": [
+        "User-owned documents include ownerId",
+        "Use serverTimestamp for createdAt/updatedAt",
+        "Use collection-per-entity (e.g. todos)"
+      ],
+      "securityRules": [
+        "Default deny",
+        "Users can only access their own documents unless explicitly public"
+      ]
+    }
+  },
+  "quality": {
+    "definitionOfDone": [
+      "Android + Web run successfully",
+      "Typecheck passes",
+      "Lint passes",
+      "Firestore rules included and documented",
+      "README includes setup + run + build steps"
+    ]
+  },
+  "llmInstructions": {
+    "workflow": [
+      "Propose data model + screens + route groups first",
+      "Implement: Firebase init -> auth provider -> auth screens -> protected layouts -> Firestore CRUD -> rules",
+      "After each milestone: list changed files + run commands + manual verification checklist"
+    ],
+    "outputFormat": [
+      "Always include file paths with full code blocks",
+      "Prefer complete file outputs over partial snippets",
+      "No new dependencies unless explicitly allowed and justified"
+    ],
+    "constraints": [
+      "Router is Expo Router (LOCKED): do not switch to React Navigation",
+      "Backend is Firebase only: do not add separate server",
+      "Keep Android + Web compatible code as a hard requirement"
+    ]
+  }
+}
