@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -14,8 +14,7 @@ import {
   View,
 } from "react-native";
 
-import { addWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
-import { useAuth } from "../../src/providers/AuthProvider";
+import { updateWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
 const itemSchema = z.object({
@@ -27,9 +26,20 @@ const itemSchema = z.object({
 
 type ItemForm = z.infer<typeof itemSchema>;
 
-export default function AddItemScreen() {
+const getParam = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value ?? "";
+
+export default function EditItemScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    title?: string | string[];
+    description?: string | string[];
+    imageUrl?: string | string[];
+    color?: string | string[];
+  }>();
+
+  const itemId = getParam(params.id);
   const {
     control,
     handleSubmit,
@@ -37,19 +47,19 @@ export default function AddItemScreen() {
   } = useForm<ItemForm>({
     resolver: zodResolver(itemSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      imageUrl: "",
-      color: "",
+      title: getParam(params.title),
+      description: getParam(params.description),
+      imageUrl: getParam(params.imageUrl),
+      color: getParam(params.color),
     },
   });
 
   const onSubmit = async (data: ItemForm) => {
-    if (!user) {
+    if (!itemId) {
       return;
     }
 
-    await addWardrobeItem(user.id, data);
+    await updateWardrobeItem(itemId, data);
     router.replace("/(app)/(tabs)/home");
   };
 
@@ -60,10 +70,8 @@ export default function AddItemScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.title}>Add a Wardrobe Item</Text>
-          <Text style={styles.subtitle}>
-            Save a quick reference for your next outfit decision.
-          </Text>
+          <Text style={styles.title}>Edit Item</Text>
+          <Text style={styles.subtitle}>Update the details for this piece.</Text>
         </View>
 
         <View style={styles.card}>
@@ -153,7 +161,7 @@ export default function AddItemScreen() {
             {isSubmitting ? (
               <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text style={styles.buttonText}>Save item</Text>
+              <Text style={styles.buttonText}>Save changes</Text>
             )}
           </Pressable>
         </View>

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { WardrobeCard } from "../../../src/components/WardrobeCard";
 import {
+  deleteWardrobeItem,
   subscribeToWardrobeItems,
   type WardrobeItem,
 } from "../../../src/lib/firestore/wardrobeItems";
@@ -31,6 +32,32 @@ export default function HomeScreen() {
     return unsubscribe;
   }, [user]);
 
+  const confirmDelete = (itemId: string) => {
+    const handleDelete = () => {
+      deleteWardrobeItem(itemId).catch(() => {});
+    };
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("Delete this item?")) {
+        handleDelete();
+      }
+      return;
+    }
+
+    Alert.alert(
+      "Delete item",
+      "Are you sure you want to delete this item?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: handleDelete,
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -49,7 +76,24 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         }
-        renderItem={({ item }) => <WardrobeCard item={item} />}
+        renderItem={({ item }) => (
+          <WardrobeCard
+            item={item}
+            onEdit={() =>
+              router.push({
+                pathname: "/(app)/edit-item",
+                params: {
+                  id: item.id,
+                  title: item.title,
+                  description: item.description,
+                  imageUrl: item.imageUrl,
+                  color: item.color,
+                },
+              })
+            }
+            onDelete={() => confirmDelete(item.id)}
+          />
+        )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>

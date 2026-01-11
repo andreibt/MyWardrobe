@@ -1,9 +1,12 @@
 import {
   addDoc,
   collection,
+  doc,
+  deleteDoc,
   onSnapshot,
   query,
   serverTimestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 
@@ -17,9 +20,11 @@ export type WardrobeItem = {
   color: string;
   ownerId: string;
   createdAt?: Date | null;
+  updatedAt?: Date | null;
 };
 
 type NewWardrobeItem = Omit<WardrobeItem, "id" | "ownerId" | "createdAt">;
+type UpdateWardrobeItem = Partial<NewWardrobeItem>;
 
 const wardrobeCollection = collection(db, "wardrobeItems");
 
@@ -41,6 +46,7 @@ export function subscribeToWardrobeItems(
         color: data.color ?? "",
         ownerId: data.ownerId ?? ownerId,
         createdAt: data.createdAt?.toDate?.() ?? null,
+        updatedAt: data.updatedAt?.toDate?.() ?? null,
       };
     });
 
@@ -61,4 +67,17 @@ export async function addWardrobeItem(ownerId: string, data: NewWardrobeItem) {
     ownerId,
     createdAt: serverTimestamp(),
   });
+}
+
+export async function updateWardrobeItem(itemId: string, data: UpdateWardrobeItem) {
+  const itemRef = doc(db, "wardrobeItems", itemId);
+  await updateDoc(itemRef, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteWardrobeItem(itemId: string) {
+  const itemRef = doc(db, "wardrobeItems", itemId);
+  await deleteDoc(itemRef);
 }
