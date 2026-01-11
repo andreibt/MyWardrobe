@@ -10,16 +10,17 @@
     "deploy": "npx expo export -p web && npx eas-cli@latest deploy"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "expo": "^54.0.1",
     "expo-router": "~6.0.0",
+    "expo-status-bar": "~2.2.0",
+    "firebase": "^10.14.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-hook-form": "^7.56.4",
     "react-native": "0.81.4",
     "react-native-web": "^0.21.0",
-    "react-hook-form": "^7.56.4",
-    "zod": "^3.25.76",
-    "expo-status-bar": "~2.2.0",
-    "@hookform/resolvers": "^5.2.2"
+    "zod": "^3.25.76"
   },
   "private": true,
   "devDependencies": {

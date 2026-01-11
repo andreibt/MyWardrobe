@@ -1,7 +1,11 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import { signInWithEmail, signOut as signOutLib } from "../lib/auth";
+import {
+  signInWithEmail,
+  signOut as signOutLib,
+  subscribeToAuthChanges,
+} from "../lib/auth";
 import type { AuthUser } from "../lib/auth";
 
 type AuthContextValue = {
@@ -15,13 +19,21 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthChanges((authUser) => {
+      setUser(authUser);
+      setIsLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const signedInUser = await signInWithEmail(email, password);
-      setUser(signedInUser);
+      await signInWithEmail(email, password);
     } finally {
       setIsLoading(false);
     }

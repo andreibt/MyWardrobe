@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 
-import type { WardrobeItem } from "../lib/wardrobe";
+import type { WardrobeItem } from "../lib/firestore/wardrobeItems";
 import { colors, radius, spacing, typography } from "../theme/tokens";
 
 type WardrobeCardProps = {
@@ -14,6 +14,7 @@ export function WardrobeCard({ item }: WardrobeCardProps) {
       <View style={styles.content}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
+        <Text style={styles.meta}>Color: {item.color}</Text>
       </View>
     </View>
   );
@@ -47,5 +48,9 @@ const styles = StyleSheet.create({
   description: {
     color: colors.muted,
     ...typography.body,
+  },
+  meta: {
+    color: colors.muted,
+    ...typography.caption,
   },
 });
