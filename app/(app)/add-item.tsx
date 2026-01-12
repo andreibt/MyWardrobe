@@ -52,6 +52,7 @@ export default function AddItemScreen() {
     await addWardrobeItem(user.id, data);
     router.replace("/(app)/(tabs)/home");
   };
+  const isBusy = Boolean(isSubmitting);
 
   return (
     <KeyboardAvoidingView
@@ -142,15 +143,15 @@ export default function AddItemScreen() {
           {errors.color ? <Text style={styles.error}>{errors.color.message}</Text> : null}
 
           <Pressable
-            disabled={isSubmitting}
+            disabled={isBusy}
             onPress={handleSubmit(onSubmit)}
             style={({ pressed }) => [
               styles.button,
               pressed && styles.buttonPressed,
-              isSubmitting && styles.buttonDisabled,
+              isBusy && styles.buttonDisabled,
             ]}
           >
-            {isSubmitting ? (
+            {isBusy ? (
               <ActivityIndicator color={colors.surface} />
             ) : (
               <Text style={styles.buttonText}>Save item</Text>
