@@ -8,10 +8,17 @@ type WardrobeCardProps = {
   item: WardrobeItem;
   onEdit?: () => void;
   onTryOn?: () => void;
+  isInTryOn?: boolean;
   onDelete?: () => void;
 };
 
-export function WardrobeCard({ item, onEdit, onTryOn, onDelete }: WardrobeCardProps) {
+export function WardrobeCard({
+  item,
+  onEdit,
+  onTryOn,
+  isInTryOn,
+  onDelete,
+}: WardrobeCardProps) {
   const { t } = useI18n();
 
   return (
@@ -30,7 +37,9 @@ export function WardrobeCard({ item, onEdit, onTryOn, onDelete }: WardrobeCardPr
             ) : null}
             {onTryOn ? (
               <Pressable onPress={onTryOn} style={[styles.actionButton, styles.tryOnButton]}>
-                <Text style={styles.tryOnText}>{t("card.try_on")}</Text>
+                <Text style={styles.tryOnText}>
+                  {isInTryOn ? t("card.try_on_remove") : t("card.try_on")}
+                </Text>
               </Pressable>
             ) : null}
             {onDelete ? (

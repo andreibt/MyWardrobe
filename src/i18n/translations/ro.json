@@ -76,6 +76,7 @@
   "card.color": "Culoare: {{color}}",
   "card.edit": "Editează",
   "card.try_on": "Probă",
+  "card.try_on_remove": "Eliminare Probă",
   "card.delete": "Șterge",
   "try_on.title": "Probă",
   "try_on.subtitle": "Trage ca să rearanjezi ținuta și elimină ce nu vrei să probezi.",

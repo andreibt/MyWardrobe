@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
-import DraggableFlatList, { type RenderItemParams } from "react-native-draggable-flatlist";
+  NestableDraggableFlatList,
+  NestableScrollContainer,
+  type RenderItemParams,
+} from "react-native-draggable-flatlist";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import {
@@ -157,20 +153,23 @@ export default function TryOnScreen() {
           <Text style={styles.emptySubtitle}>{t("try_on.empty_subtitle")}</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.layers} showsVerticalScrollIndicator={false}>
+        <NestableScrollContainer
+          contentContainerStyle={styles.layers}
+          showsVerticalScrollIndicator={false}
+        >
           {LAYERS.map((layer) => (
             <View key={layer} style={styles.layerSection}>
               <Text style={styles.layerTitle}>{t(`try_on.layer_${layer}`)}</Text>
               {layerItems[layer].length === 0 ? (
                 <Text style={styles.layerEmpty}>{t("try_on.layer_empty")}</Text>
               ) : (
-                <DraggableFlatList
+                <NestableDraggableFlatList
                   data={layerItems[layer]}
                   keyExtractor={(item) => item.id}
                   onDragEnd={handleDragEnd(layer)}
                   renderItem={renderItem(layer)}
                   numColumns={numColumns}
-                  activationDistance={8}
+                  activationDistance={12}
                   scrollEnabled={false}
                   contentContainerStyle={styles.listContent}
                   columnWrapperStyle={styles.columnWrapper}
@@ -178,7 +177,7 @@ export default function TryOnScreen() {
               )}
             </View>
           ))}
-        </ScrollView>
+        </NestableScrollContainer>
       )}
     </View>
   );

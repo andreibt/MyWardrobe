@@ -5,7 +5,12 @@ import { useRouter } from "expo-router";
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import { WardrobeCard } from "../../../src/components/WardrobeCard";
 import { subscribeToTags, type WardrobeTag } from "../../../src/lib/firestore/tags";
-import { addTryOnItem } from "../../../src/lib/firestore/tryOnList";
+import {
+  addTryOnItem,
+  deleteTryOnItem,
+  subscribeToTryOnItems,
+  type TryOnItem,
+} from "../../../src/lib/firestore/tryOnList";
 import {
   deleteWardrobeItem,
   subscribeToWardrobeItems,
@@ -23,6 +28,7 @@ export default function HomeScreen() {
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [tags, setTags] = useState<WardrobeTag[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [tryOnItems, setTryOnItems] = useState<TryOnItem[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -47,6 +53,19 @@ export default function HomeScreen() {
 
     return subscribeToTags(user.id, setTags);
   }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setTryOnItems([]);
+      return;
+    }
+
+    return subscribeToTryOnItems(user.id, setTryOnItems);
+  }, [user]);
+
+  const tryOnByWardrobeId = useMemo(() => {
+    return new Map(tryOnItems.map((entry) => [entry.wardrobeItemId, entry]));
+  }, [tryOnItems]);
 
   const filteredItems = useMemo(() => {
     if (tagFilters.length === 0) {
@@ -94,6 +113,11 @@ export default function HomeScreen() {
 
   const handleTryOn = (item: WardrobeItem) => {
     if (!user) {
+      return;
+    }
+    const existing = tryOnByWardrobeId.get(item.id);
+    if (existing) {
+      deleteTryOnItem(existing.id).catch(() => {});
       return;
     }
     addTryOnItem(user.id, item).catch(() => {});
@@ -189,6 +213,7 @@ export default function HomeScreen() {
               })
             }
             onTryOn={() => handleTryOn(item)}
+            isInTryOn={tryOnByWardrobeId.has(item.id)}
             onDelete={() => confirmDelete(item.id)}
           />
         )}
