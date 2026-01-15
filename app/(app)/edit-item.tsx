@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,8 +15,10 @@ import {
   View,
 } from "react-native";
 
+import { TagSelector } from "../../src/components/TagSelector";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { updateWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
+import { useAuth } from "../../src/providers/AuthProvider";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
 // const itemSchema = z.object({
@@ -37,18 +40,37 @@ type ItemForm = z.infer<typeof itemSchema>;
 const getParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value ?? "";
 
+const parseTags = (value: string | string[] | undefined) => {
+  const raw = getParam(value);
+  if (!raw) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((tag): tag is string => typeof tag === "string")
+      : [];
+  } catch {
+    return [];
+  }
+};
+
 export default function EditItemScreen() {
   const router = useRouter();
   const { t } = useI18n();
+  const { user } = useAuth();
   const params = useLocalSearchParams<{
     id?: string | string[];
     title?: string | string[];
     description?: string | string[];
     imageUrl?: string | string[];
     color?: string | string[];
+    tags?: string | string[];
   }>();
 
   const itemId = getParam(params.id);
+  const initialTags = useMemo(() => parseTags(params.tags), [params.tags]);
+  const [tags, setTags] = useState<string[]>(initialTags);
   const {
     control,
     handleSubmit,
@@ -63,12 +85,16 @@ export default function EditItemScreen() {
     },
   });
 
+  useEffect(() => {
+    setTags(initialTags);
+  }, [initialTags]);
+
   const onSubmit = async (data: ItemForm) => {
     if (!itemId) {
       return;
     }
 
-    await updateWardrobeItem(itemId, data);
+    await updateWardrobeItem(itemId, { ...data, tags });
     router.replace("/(app)/(tabs)/home");
   };
 
@@ -161,7 +187,13 @@ export default function EditItemScreen() {
           {errors.color ? (
             <Text style={styles.error}>{t(errors.color.message  || "")}</Text>
           ) : null}
-          
+
+          <TagSelector
+            ownerId={user?.id ?? null}
+            selectedTags={tags}
+            onChange={setTags}
+          />
+
           <Pressable
             disabled={!!isSubmitting}
             onPress={handleSubmit(onSubmit)}

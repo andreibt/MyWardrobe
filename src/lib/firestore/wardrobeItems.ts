@@ -18,6 +18,7 @@ export type WardrobeItem = {
   description: string;
   imageUrl: string;
   color: string;
+  tags: string[];
   ownerId: string;
   createdAt?: Date | null;
   updatedAt?: Date | null;
@@ -44,6 +45,7 @@ export function subscribeToWardrobeItems(
         description: data.description ?? "",
         imageUrl: data.imageUrl ?? "",
         color: data.color ?? "",
+        tags: Array.isArray(data.tags) ? data.tags : [],
         ownerId: data.ownerId ?? ownerId,
         createdAt: data.createdAt?.toDate?.() ?? null,
         updatedAt: data.updatedAt?.toDate?.() ?? null,

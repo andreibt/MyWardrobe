@@ -152,7 +152,8 @@ const styles = StyleSheet.create({
   },
   slideText: {
     color: colors.text,
-    ...typography.body,
+    ...typography.h2,
+    lineHeight: 28,
     textAlign: "center",
   },
   footer: {

@@ -93,6 +93,7 @@ export default function HomeScreen() {
                   description: item.description,
                   imageUrl: item.imageUrl,
                   color: item.color,
+                  tags: JSON.stringify(item.tags ?? []),
                 },
               })
             }

@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useMemo, useState } from "react";
 
+import { TagSelector } from "../../src/components/TagSelector";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { addWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
 import { useAuth } from "../../src/providers/AuthProvider";
@@ -60,6 +61,7 @@ export default function AddItemScreen() {
   >([]);
   const [driveError, setDriveError] = useState<DriveErrorKey | null>(null);
   const [isDriveLoading, setIsDriveLoading] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
   const isBusy = Boolean(isSubmitting);
   const driveApiKey = "AIzaSyBeO6ZDVcS5PRzXic4mfbCJkqPB1s0dBFc";
 
@@ -73,7 +75,7 @@ export default function AddItemScreen() {
       return;
     }
 
-    await addWardrobeItem(user.id, data);
+    await addWardrobeItem(user.id, { ...data, tags });
     router.replace("/(app)/(tabs)/home");
   };
 
@@ -261,6 +263,12 @@ export default function AddItemScreen() {
           {errors.color ? (
             <Text style={styles.error}>{t(errors.color.message)}</Text>
           ) : null}
+
+          <TagSelector
+            ownerId={user?.id ?? null}
+            selectedTags={tags}
+            onChange={setTags}
+          />
 
           <Pressable
             disabled={isBusy}
