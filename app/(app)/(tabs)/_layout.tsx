@@ -29,6 +29,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="try-on"
+        options={{
+          title: t("tabs.try_on"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="tshirt-crew-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: t("tabs.settings"),

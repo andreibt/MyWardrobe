@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import { WardrobeCard } from "../../../src/components/WardrobeCard";
 import { subscribeToTags, type WardrobeTag } from "../../../src/lib/firestore/tags";
+import { addTryOnItem } from "../../../src/lib/firestore/tryOnList";
 import {
   deleteWardrobeItem,
   subscribeToWardrobeItems,
@@ -89,6 +90,13 @@ export default function HomeScreen() {
         },
       ]
     );
+  };
+
+  const handleTryOn = (item: WardrobeItem) => {
+    if (!user) {
+      return;
+    }
+    addTryOnItem(user.id, item).catch(() => {});
   };
 
   return (
@@ -180,6 +188,7 @@ export default function HomeScreen() {
                 },
               })
             }
+            onTryOn={() => handleTryOn(item)}
             onDelete={() => confirmDelete(item.id)}
           />
         )}

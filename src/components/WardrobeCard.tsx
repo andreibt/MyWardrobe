@@ -7,10 +7,11 @@ import { colors, radius, spacing, typography } from "../theme/tokens";
 type WardrobeCardProps = {
   item: WardrobeItem;
   onEdit?: () => void;
+  onTryOn?: () => void;
   onDelete?: () => void;
 };
 
-export function WardrobeCard({ item, onEdit, onDelete }: WardrobeCardProps) {
+export function WardrobeCard({ item, onEdit, onTryOn, onDelete }: WardrobeCardProps) {
   const { t } = useI18n();
 
   return (
@@ -20,11 +21,16 @@ export function WardrobeCard({ item, onEdit, onDelete }: WardrobeCardProps) {
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
         <Text style={styles.meta}>{t("card.color", { color: item.color })}</Text>
-        {(onEdit || onDelete) ? (
+        {(onEdit || onTryOn || onDelete) ? (
           <View style={styles.actions}>
             {onEdit ? (
               <Pressable onPress={onEdit} style={styles.actionButton}>
                 <Text style={styles.actionText}>{t("card.edit")}</Text>
+              </Pressable>
+            ) : null}
+            {onTryOn ? (
+              <Pressable onPress={onTryOn} style={[styles.actionButton, styles.tryOnButton]}>
+                <Text style={styles.tryOnText}>{t("card.try_on")}</Text>
               </Pressable>
             ) : null}
             {onDelete ? (
@@ -95,6 +101,14 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: "#8A1F1F",
+    ...typography.caption,
+  },
+  tryOnButton: {
+    backgroundColor: "#E9F2E0",
+    borderColor: "#C5DBC0",
+  },
+  tryOnText: {
+    color: "#2D5A4E",
     ...typography.caption,
   },
 });
