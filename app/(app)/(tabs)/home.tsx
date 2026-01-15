@@ -17,12 +17,14 @@ import {
   type WardrobeItem,
 } from "../../../src/lib/firestore/wardrobeItems";
 import { useAuth } from "../../../src/providers/AuthProvider";
+import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
 import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const { t } = useI18n();
+  const { activeConfig } = useTryOnConfig();
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
@@ -60,8 +62,8 @@ export default function HomeScreen() {
       return;
     }
 
-    return subscribeToTryOnItems(user.id, setTryOnItems);
-  }, [user]);
+    return subscribeToTryOnItems(user.id, setTryOnItems, activeConfig);
+  }, [user, activeConfig]);
 
   const tryOnByWardrobeId = useMemo(() => {
     return new Map(tryOnItems.map((entry) => [entry.wardrobeItemId, entry]));
@@ -120,7 +122,7 @@ export default function HomeScreen() {
       deleteTryOnItem(existing.id).catch(() => {});
       return;
     }
-    addTryOnItem(user.id, item).catch(() => {});
+    addTryOnItem(user.id, item, activeConfig).catch(() => {});
   };
 
   return (
@@ -139,6 +141,12 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>{t("home.title")}</Text>
             <Text style={styles.subtitle}>{t("home.subtitle")}</Text>
+            {activeConfig ? (
+              <View style={styles.configBadge}>
+                <Text style={styles.configLabel}>{t("home.active_config")}</Text>
+                <Text style={styles.configName}>{activeConfig}</Text>
+              </View>
+            ) : null}
             <Pressable
               style={styles.filterToggle}
               onPress={() => setIsFilterOpen((value) => !value)}
@@ -254,6 +262,26 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.muted,
+    ...typography.body,
+  },
+  configBadge: {
+    alignSelf: "flex-start",
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    gap: spacing.xs,
+  },
+  configLabel: {
+    color: colors.muted,
+    ...typography.caption,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  configName: {
+    color: colors.text,
     ...typography.body,
   },
   filterToggle: {

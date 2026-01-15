@@ -31,6 +31,7 @@ import {
   type TryOnConfig,
 } from "../../../src/lib/firestore/tryOnConfigs";
 import { useAuth } from "../../../src/providers/AuthProvider";
+import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
 import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 
 const LAYERS: TryOnItem["layer"][] = ["top", "middle", "bottom"];
@@ -38,9 +39,9 @@ const LAYERS: TryOnItem["layer"][] = ["top", "middle", "bottom"];
 export default function TryOnScreen() {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { activeConfig, setActiveConfig } = useTryOnConfig();
   const [items, setItems] = useState<TryOnItem[]>([]);
   const [configs, setConfigs] = useState<TryOnConfig[]>([]);
-  const [selectedConfig, setSelectedConfig] = useState<string | null>(null);
   const [configName, setConfigName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const { width } = useWindowDimensions();
@@ -66,11 +67,11 @@ export default function TryOnScreen() {
         setItems(nextItems);
         setIsLoading(false);
       },
-      selectedConfig
+      activeConfig
     );
 
     return unsubscribe;
-  }, [user, selectedConfig]);
+  }, [user, activeConfig]);
 
   useEffect(() => {
     if (!user) {
@@ -140,9 +141,10 @@ export default function TryOnScreen() {
       return;
     }
 
-    const itemsToSave = selectedConfig
-      ? items
-      : items.filter((item) => !item.configuration);
+    const itemsToSave =
+      activeConfig === null
+        ? items.filter((item) => !item.configuration)
+        : items;
 
     if (itemsToSave.length > 0) {
       updateTryOnConfiguration(itemsToSave, trimmed).catch(() => {});
@@ -155,12 +157,12 @@ export default function TryOnScreen() {
       addTryOnConfig(user.id, trimmed).catch(() => {});
     }
 
-    setSelectedConfig(trimmed);
+    setActiveConfig(trimmed);
     setConfigName("");
   };
 
   const handleSelectConfig = (name: string) => {
-    setSelectedConfig((current) => (current === name ? null : name));
+    setActiveConfig(activeConfig === name ? null : name);
   };
 
   const handleDeleteConfig = (config: TryOnConfig) => {
@@ -169,8 +171,8 @@ export default function TryOnScreen() {
     }
     deleteTryOnItemsByConfiguration(user.id, config.name).catch(() => {});
     deleteTryOnConfig(config.id).catch(() => {});
-    if (selectedConfig === config.name) {
-      setSelectedConfig(null);
+    if (activeConfig === config.name) {
+      setActiveConfig(null);
     }
   };
 
@@ -285,7 +287,7 @@ export default function TryOnScreen() {
           ) : (
             <View style={styles.configList}>
               {configs.map((config) => {
-                const isActive = selectedConfig === config.name;
+                const isActive = activeConfig === config.name;
                 return (
                   <View key={config.id} style={styles.configItem}>
                     <Pressable

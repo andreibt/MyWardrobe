@@ -7,6 +7,7 @@
   "home.filter_count": "{{count}} selected",
   "home.filter_clear": "Clear filters",
   "home.filter_empty": "Create tags to use filters.",
+  "home.active_config": "Active try-on",
   "home.empty_loading": "Loading items...",
   "home.empty": "No wardrobe items yet.",
   "home.empty_subtitle": "Add your first item to start building your library.",

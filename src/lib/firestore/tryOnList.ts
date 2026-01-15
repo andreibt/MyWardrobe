@@ -83,11 +83,16 @@ export function subscribeToTryOnItems(
   });
 }
 
-export async function addTryOnItem(ownerId: string, item: WardrobeItem) {
+export async function addTryOnItem(
+  ownerId: string,
+  item: WardrobeItem,
+  configuration: string | null
+) {
   const existingQuery = query(
     tryOnCollection,
     where("ownerId", "==", ownerId),
     where("wardrobeItemId", "==", item.id),
+    where("configuration", "==", configuration),
     limit(1)
   );
   const existing = await getDocs(existingQuery);
@@ -101,7 +106,7 @@ export async function addTryOnItem(ownerId: string, item: WardrobeItem) {
     title: item.title ?? "",
     imageUrl: item.imageUrl ?? "",
     color: item.color ?? "",
-    configuration: null,
+    configuration,
     layer: "middle",
     order: Date.now(),
     createdAt: serverTimestamp(),

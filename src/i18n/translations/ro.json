@@ -7,6 +7,7 @@
   "home.filter_count": "{{count}} selectate",
   "home.filter_clear": "Șterge filtrele",
   "home.filter_empty": "Creează etichete pentru a folosi filtrele.",
+  "home.active_config": "Probă activă",
   "home.empty_loading": "Se încarcă articolele...",
   "home.empty": "Nu există articole în garderobă încă.",
   "home.empty_subtitle": "Adaugă primul articol ca să-ți construiești biblioteca.",
