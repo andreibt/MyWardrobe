@@ -1,8 +1,11 @@
 import { Tabs } from "expo-router";
 
+import { useI18n } from "../../../src/i18n/I18nProvider";
 import { colors } from "../../../src/theme/tokens";
 
 export default function TabsLayout() {
+  const { t } = useI18n();
+
   return (
     <Tabs
       screenOptions={{
@@ -18,13 +21,13 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Wardrobe",
+          title: t("tabs.home"),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: t("tabs.settings"),
         }}
       />
     </Tabs>

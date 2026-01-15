@@ -14,12 +14,13 @@ import {
   View,
 } from "react-native";
 
+import { useI18n } from "../../src/i18n/I18nProvider";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("validation.email_invalid"),
+  password: z.string().min(6, "validation.password_min"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -27,6 +28,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginScreen() {
   const { signIn, isLoading } = useAuth();
   const router = useRouter();
+  const { t, language, setLanguage } = useI18n();
   const {
     control,
     handleSubmit,
@@ -41,7 +43,7 @@ export default function LoginScreen() {
 
   const onSubmit = async (data: LoginForm) => {
     await signIn(data.email, data.password);
-    router.replace("/(app)/(tabs)/home");
+    router.replace("/(app)/tutorial");
   };
 
   return (
@@ -50,15 +52,53 @@ export default function LoginScreen() {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.languageSection}>
+          <Text style={styles.languageLabel}>{t("login.language_label")}</Text>
+          <View style={styles.languageRow}>
+            <Pressable
+              onPress={() => setLanguage("en")}
+              style={({ pressed }) => [
+                styles.languageButton,
+                language === "en" && styles.languageButtonActive,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.languageText,
+                  language === "en" && styles.languageTextActive,
+                ]}
+              >
+                {t("login.language_en")}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setLanguage("ro")}
+              style={({ pressed }) => [
+                styles.languageButton,
+                language === "ro" && styles.languageButtonActive,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.languageText,
+                  language === "ro" && styles.languageTextActive,
+                ]}
+              >
+                {t("login.language_ro")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
         <View style={styles.header}>
-          <Text style={styles.title}>Organize My Wardrobe</Text>
-          <Text style={styles.subtitle}>
-            Log in to keep a curated library of everything you own.
-          </Text>
+          <Text style={styles.title}>{t("login.title")}</Text>
+          <Text style={styles.subtitle}>{t("login.subtitle")}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>{t("login.label.email")}</Text>
           <Controller
             control={control}
             name="email"
@@ -67,7 +107,7 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
-                placeholder="you@example.com"
+                placeholder={t("login.placeholder.email")}
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 value={value}
@@ -76,16 +116,18 @@ export default function LoginScreen() {
               />
             )}
           />
-          {errors.email ? <Text style={styles.error}>{errors.email.message}</Text> : null}
+          {errors.email ? (
+            <Text style={styles.error}>{t(errors.email.message)}</Text>
+          ) : null}
 
-          <Text style={styles.label}>Password</Text>
+          <Text style={styles.label}>{t("login.label.password")}</Text>
           <Controller
             control={control}
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
                 autoCapitalize="none"
-                placeholder="Your password"
+                placeholder={t("login.placeholder.password")}
                 placeholderTextColor={colors.muted}
                 secureTextEntry
                 style={styles.input}
@@ -96,7 +138,7 @@ export default function LoginScreen() {
             )}
           />
           {errors.password ? (
-            <Text style={styles.error}>{errors.password.message}</Text>
+            <Text style={styles.error}>{t(errors.password.message)}</Text>
           ) : null}
 
           <Pressable
@@ -111,12 +153,12 @@ export default function LoginScreen() {
             {isLoading ? (
               <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text style={styles.buttonText}>Log in</Text>
+              <Text style={styles.buttonText}>{t("login.button")}</Text>
             )}
           </Pressable>
         </View>
 
-        <Text style={styles.footer}>New here? We can add sign-up next.</Text>
+        <Text style={styles.footer}>{t("login.footer")}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -131,7 +173,39 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: spacing.lg,
     gap: spacing.lg,
-    justifyContent: "center",
+    justifyContent: "flex-start",
+  },
+  languageSection: {
+    gap: spacing.xs,
+  },
+  languageLabel: {
+    color: colors.text,
+    ...typography.caption,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  languageRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  languageButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  languageButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  languageText: {
+    color: colors.text,
+    ...typography.caption,
+  },
+  languageTextActive: {
+    color: colors.surface,
   },
   header: {
     gap: spacing.sm,

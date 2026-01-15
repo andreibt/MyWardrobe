@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
+import { useI18n } from "../../../src/i18n/I18nProvider";
 import { WardrobeCard } from "../../../src/components/WardrobeCard";
 import {
   deleteWardrobeItem,
@@ -14,6 +15,7 @@ import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useI18n();
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,19 +40,19 @@ export default function HomeScreen() {
     };
 
     if (Platform.OS === "web") {
-      if (typeof window !== "undefined" && window.confirm("Delete this item?")) {
+      if (typeof window !== "undefined" && window.confirm(t("home.delete_confirm"))) {
         handleDelete();
       }
       return;
     }
 
     Alert.alert(
-      "Delete item",
-      "Are you sure you want to delete this item?",
+      t("home.delete_title"),
+      t("home.delete_message"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("home.delete_cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("home.delete_confirm_button"),
           style: "destructive",
           onPress: handleDelete,
         },
@@ -72,12 +74,10 @@ export default function HomeScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Wardrobe Library</Text>
-            <Text style={styles.subtitle}>
-              A quick visual inventory of the pieces you already own.
-            </Text>
+            <Text style={styles.title}>{t("home.title")}</Text>
+            <Text style={styles.subtitle}>{t("home.subtitle")}</Text>
             <Pressable style={styles.addButton} onPress={() => router.push("/(app)/add-item")}>
-              <Text style={styles.addButtonText}>+ Add new item</Text>
+              <Text style={styles.addButtonText}>{t("home.add_button")}</Text>
             </Pressable>
           </View>
         }
@@ -102,11 +102,9 @@ export default function HomeScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>
-              {isLoading ? "Loading items..." : "No wardrobe items yet."}
+              {isLoading ? t("home.empty_loading") : t("home.empty")}
             </Text>
-            <Text style={styles.emptySubtitle}>
-              Add your first item to start building your library.
-            </Text>
+            <Text style={styles.emptySubtitle}>{t("home.empty_subtitle")}</Text>
           </View>
         }
       />

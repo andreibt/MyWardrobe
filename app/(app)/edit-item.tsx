@@ -14,8 +14,16 @@ import {
   View,
 } from "react-native";
 
+import { useI18n } from "../../src/i18n/I18nProvider";
 import { updateWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
+
+// const itemSchema = z.object({
+//   title: z.string().min(2, "validation.title_required"),
+//   description: z.string().min(4, "validation.description_required"),
+//   imageUrl: z.string().url("validation.image_url_invalid"),
+//   color: z.string().min(2, "validation.color_required"),
+// });
 
 const itemSchema = z.object({
   title: z.string().min(2, "Title is required"),
@@ -31,6 +39,7 @@ const getParam = (value: string | string[] | undefined) =>
 
 export default function EditItemScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const params = useLocalSearchParams<{
     id?: string | string[];
     title?: string | string[];
@@ -70,18 +79,18 @@ export default function EditItemScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.title}>Edit Item</Text>
-          <Text style={styles.subtitle}>Update the details for this piece.</Text>
+          <Text style={styles.title}>{t("edit.title")}</Text>
+          <Text style={styles.subtitle}>{t("edit.subtitle")}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Title</Text>
+          <Text style={styles.label}>{t("add.label.title")}</Text>
           <Controller
             control={control}
             name="title"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="Cropped linen shirt"
+                placeholder={t("add.placeholder.title")}
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 value={value}
@@ -90,15 +99,17 @@ export default function EditItemScreen() {
               />
             )}
           />
-          {errors.title ? <Text style={styles.error}>{errors.title.message}</Text> : null}
+          {errors.title ? (
+            <Text style={styles.error}>{t(errors.title.message || "")}</Text>
+          ) : null}
 
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>{t("add.label.description")}</Text>
           <Controller
             control={control}
             name="description"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="Lightweight and perfect for layering."
+                placeholder={t("add.placeholder.description")}
                 placeholderTextColor={colors.muted}
                 style={[styles.input, styles.multilineInput]}
                 value={value}
@@ -109,16 +120,16 @@ export default function EditItemScreen() {
             )}
           />
           {errors.description ? (
-            <Text style={styles.error}>{errors.description.message}</Text>
+            <Text style={styles.error}>{t(errors.description.message  || "")}</Text>
           ) : null}
 
-          <Text style={styles.label}>Image URL</Text>
+          <Text style={styles.label}>{t("add.label.image_url")}</Text>
           <Controller
             control={control}
             name="imageUrl"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="https://images.unsplash.com/..."
+                placeholder={t("add.placeholder.image_url")}
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 value={value}
@@ -129,16 +140,16 @@ export default function EditItemScreen() {
             )}
           />
           {errors.imageUrl ? (
-            <Text style={styles.error}>{errors.imageUrl.message}</Text>
+            <Text style={styles.error}>{t(errors.imageUrl.message  || "")}</Text>
           ) : null}
 
-          <Text style={styles.label}>Color</Text>
+          <Text style={styles.label}>{t("add.label.color")}</Text>
           <Controller
             control={control}
             name="color"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="Ivory"
+                placeholder={t("add.placeholder.color")}
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 value={value}
@@ -147,10 +158,12 @@ export default function EditItemScreen() {
               />
             )}
           />
-          {errors.color ? <Text style={styles.error}>{errors.color.message}</Text> : null}
-
+          {errors.color ? (
+            <Text style={styles.error}>{t(errors.color.message  || "")}</Text>
+          ) : null}
+          
           <Pressable
-            disabled={isSubmitting}
+            disabled={!!isSubmitting}
             onPress={handleSubmit(onSubmit)}
             style={({ pressed }) => [
               styles.button,
@@ -161,13 +174,13 @@ export default function EditItemScreen() {
             {isSubmitting ? (
               <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text style={styles.buttonText}>Save changes</Text>
+              <Text style={styles.buttonText}>{t("edit.save_button")}</Text>
             )}
           </Pressable>
         </View>
 
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>Cancel</Text>
+          <Text style={styles.link}>{t("edit.cancel")}</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -189,11 +202,11 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    ...typography.h1,
+    // ...typography.h1,
   },
   subtitle: {
     color: colors.muted,
-    ...typography.body,
+    // ...typography.body,
   },
   card: {
     backgroundColor: colors.surface,
@@ -205,7 +218,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.text,
-    ...typography.caption,
+    // ...typography.caption,
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
@@ -223,7 +236,7 @@ const styles = StyleSheet.create({
   },
   error: {
     color: "#B00020",
-    ...typography.caption,
+    // ...typography.caption,
   },
   button: {
     marginTop: spacing.sm,
@@ -240,11 +253,11 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: colors.surface,
-    ...typography.h2,
+    // ...typography.h2,
   },
   link: {
     color: colors.primary,
     textAlign: "center",
-    ...typography.body,
+    // ...typography.body,
   },
 });

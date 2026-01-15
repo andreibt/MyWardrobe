@@ -16,22 +16,29 @@ import {
 } from "react-native";
 import { useMemo, useState } from "react";
 
+import { useI18n } from "../../src/i18n/I18nProvider";
 import { addWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
 const itemSchema = z.object({
-  title: z.string().min(2, "Title is required"),
-  description: z.string().min(4, "Description is required"),
-  imageUrl: z.string().url("Enter a valid image URL"),
-  color: z.string().min(2, "Color is required"),
+  title: z.string().min(2, "validation.title_required"),
+  description: z.string().min(4, "validation.description_required"),
+  imageUrl: z.string().url("validation.image_url_invalid"),
+  color: z.string().min(2, "validation.color_required"),
 });
 
 type ItemForm = z.infer<typeof itemSchema>;
+type DriveErrorKey =
+  | "add.drive.invalid_link"
+  | "add.drive.request_failed"
+  | "add.drive.no_images"
+  | "add.drive.load_error";
 
 export default function AddItemScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useI18n();
   const {
     control,
     handleSubmit,
@@ -51,7 +58,7 @@ export default function AddItemScreen() {
   const [driveFiles, setDriveFiles] = useState<
     Array<{ id: string; name: string; mimeType: string; thumbnailLink?: string}>
   >([]);
-  const [driveError, setDriveError] = useState<string | null>(null);
+  const [driveError, setDriveError] = useState<DriveErrorKey | null>(null);
   const [isDriveLoading, setIsDriveLoading] = useState(false);
   const isBusy = Boolean(isSubmitting);
   const driveApiKey = "AIzaSyBeO6ZDVcS5PRzXic4mfbCJkqPB1s0dBFc";
@@ -72,7 +79,7 @@ export default function AddItemScreen() {
 
   const handleLoadDriveFiles = async () => {
     if (!folderId) {
-      setDriveError("Paste a valid Google Drive folder link.");
+      setDriveError("add.drive.invalid_link");
       return;
     }
 
@@ -88,7 +95,7 @@ export default function AddItemScreen() {
       );
 
       if (!response.ok) {
-        throw new Error("Drive request failed.");
+        throw new Error("add.drive.request_failed");
       }
 
       const payload = await response.json();
@@ -98,10 +105,14 @@ export default function AddItemScreen() {
       );
       setDriveFiles(imageFiles);
       if (imageFiles.length === 0) {
-        setDriveError("No images found in that folder.");
+        setDriveError("add.drive.no_images");
       }
-    } catch {
-      setDriveError("Could not load images from Drive.");
+    } catch (error) {
+      if (error instanceof Error && error.message === "add.drive.request_failed") {
+        setDriveError("add.drive.request_failed");
+      } else {
+        setDriveError("add.drive.load_error");
+      }
     } finally {
       setIsDriveLoading(false);
     }
@@ -120,20 +131,18 @@ export default function AddItemScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.title}>Add a Wardrobe Item</Text>
-          <Text style={styles.subtitle}>
-            Save a quick reference for your next outfit decision.
-          </Text>
+          <Text style={styles.title}>{t("add.title")}</Text>
+          <Text style={styles.subtitle}>{t("add.subtitle")}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Title</Text>
+          <Text style={styles.label}>{t("add.label.title")}</Text>
           <Controller
             control={control}
             name="title"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="Cropped linen shirt"
+                placeholder={t("add.placeholder.title")}
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 value={value}
@@ -142,15 +151,17 @@ export default function AddItemScreen() {
               />
             )}
           />
-          {errors.title ? <Text style={styles.error}>{errors.title.message}</Text> : null}
+          {errors.title ? (
+            <Text style={styles.error}>{t(errors.title.message)}</Text>
+          ) : null}
 
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>{t("add.label.description")}</Text>
           <Controller
             control={control}
             name="description"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="Lightweight and perfect for layering."
+                placeholder={t("add.placeholder.description")}
                 placeholderTextColor={colors.muted}
                 style={[styles.input, styles.multilineInput]}
                 value={value}
@@ -161,16 +172,16 @@ export default function AddItemScreen() {
             )}
           />
           {errors.description ? (
-            <Text style={styles.error}>{errors.description.message}</Text>
+            <Text style={styles.error}>{t(errors.description.message)}</Text>
           ) : null}
 
-          <Text style={styles.label}>Image URL</Text>
+          <Text style={styles.label}>{t("add.label.image_url")}</Text>
           <Controller
             control={control}
             name="imageUrl"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="https://images.unsplash.com/..."
+                placeholder={t("add.placeholder.image_url")}
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 value={value}
@@ -185,9 +196,9 @@ export default function AddItemScreen() {
           ) : null}
 
           <View style={styles.divider} />
-          <Text style={styles.label}>Or choose from Drive folder</Text>
+          <Text style={styles.label}>{t("add.label.drive")}</Text>
           <TextInput
-            placeholder="https://drive.google.com/drive/folders/..."
+            placeholder={t("add.placeholder.drive_url")}
             placeholderTextColor={colors.muted}
             style={styles.input}
             value={driveFolderLink}
@@ -207,10 +218,10 @@ export default function AddItemScreen() {
             {isDriveLoading ? (
               <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={styles.secondaryButtonText}>Load Drive images</Text>
+              <Text style={styles.secondaryButtonText}>{t("add.drive.load_button")}</Text>
             )}
           </Pressable>
-          {driveError ? <Text style={styles.error}>{driveError}</Text> : null}
+          {driveError ? <Text style={styles.error}>{t(driveError)}</Text> : null}
           {driveFiles.length > 0 ? (
             <View style={styles.driveGrid}>
               {driveFiles.map((file) => (
@@ -232,13 +243,13 @@ export default function AddItemScreen() {
             </View>
           ) : null}
 
-          <Text style={styles.label}>Color</Text>
+          <Text style={styles.label}>{t("add.label.color")}</Text>
           <Controller
             control={control}
             name="color"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="Ivory"
+                placeholder={t("add.placeholder.color")}
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 value={value}
@@ -247,7 +258,9 @@ export default function AddItemScreen() {
               />
             )}
           />
-          {errors.color ? <Text style={styles.error}>{errors.color.message}</Text> : null}
+          {errors.color ? (
+            <Text style={styles.error}>{t(errors.color.message)}</Text>
+          ) : null}
 
           <Pressable
             disabled={isBusy}
@@ -261,13 +274,13 @@ export default function AddItemScreen() {
             {isBusy ? (
               <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text style={styles.buttonText}>Save item</Text>
+              <Text style={styles.buttonText}>{t("add.save_button")}</Text>
             )}
           </Pressable>
         </View>
 
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>Cancel</Text>
+          <Text style={styles.link}>{t("add.cancel")}</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

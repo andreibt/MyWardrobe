@@ -1,5 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { useI18n } from "../i18n/I18nProvider";
 import type { WardrobeItem } from "../lib/firestore/wardrobeItems";
 import { colors, radius, spacing, typography } from "../theme/tokens";
 
@@ -10,23 +11,25 @@ type WardrobeCardProps = {
 };
 
 export function WardrobeCard({ item, onEdit, onDelete }: WardrobeCardProps) {
+  const { t } = useI18n();
+
   return (
     <View style={styles.card}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
       <View style={styles.content}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
-        <Text style={styles.meta}>Color: {item.color}</Text>
+        <Text style={styles.meta}>{t("card.color", { color: item.color })}</Text>
         {(onEdit || onDelete) ? (
           <View style={styles.actions}>
             {onEdit ? (
               <Pressable onPress={onEdit} style={styles.actionButton}>
-                <Text style={styles.actionText}>Edit</Text>
+                <Text style={styles.actionText}>{t("card.edit")}</Text>
               </Pressable>
             ) : null}
             {onDelete ? (
               <Pressable onPress={onDelete} style={[styles.actionButton, styles.deleteButton]}>
-                <Text style={styles.deleteText}>Delete</Text>
+                <Text style={styles.deleteText}>{t("card.delete")}</Text>
               </Pressable>
             ) : null}
           </View>
