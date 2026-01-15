@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import {
   NestableDraggableFlatList,
   NestableScrollContainer,
@@ -9,11 +17,19 @@ import {
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import {
   deleteTryOnItem,
+  deleteTryOnItemsByConfiguration,
   subscribeToTryOnItems,
+  updateTryOnConfiguration,
   updateTryOnLayer,
   updateTryOnOrder,
   type TryOnItem,
 } from "../../../src/lib/firestore/tryOnList";
+import {
+  addTryOnConfig,
+  deleteTryOnConfig,
+  subscribeToTryOnConfigs,
+  type TryOnConfig,
+} from "../../../src/lib/firestore/tryOnConfigs";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 
@@ -23,6 +39,9 @@ export default function TryOnScreen() {
   const { user } = useAuth();
   const { t } = useI18n();
   const [items, setItems] = useState<TryOnItem[]>([]);
+  const [configs, setConfigs] = useState<TryOnConfig[]>([]);
+  const [selectedConfig, setSelectedConfig] = useState<string | null>(null);
+  const [configName, setConfigName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const { width } = useWindowDimensions();
   const numColumns = width >= 900 ? 3 : 2;
@@ -38,12 +57,28 @@ export default function TryOnScreen() {
       return;
     }
 
-    const unsubscribe = subscribeToTryOnItems(user.id, (nextItems) => {
-      setItems(nextItems);
-      setIsLoading(false);
-    });
+    setItems([]);
+    setIsLoading(true);
+
+    const unsubscribe = subscribeToTryOnItems(
+      user.id,
+      (nextItems) => {
+        setItems(nextItems);
+        setIsLoading(false);
+      },
+      selectedConfig
+    );
 
     return unsubscribe;
+  }, [user, selectedConfig]);
+
+  useEffect(() => {
+    if (!user) {
+      setConfigs([]);
+      return;
+    }
+
+    return subscribeToTryOnConfigs(user.id, setConfigs);
   }, [user]);
 
   const layerItems = useMemo(() => {
@@ -96,6 +131,49 @@ export default function TryOnScreen() {
     updateTryOnLayer(item.id, nextLayer, nextOrder).catch(() => {});
   };
 
+  const handleSaveConfig = () => {
+    if (!user) {
+      return;
+    }
+    const trimmed = configName.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const itemsToSave = selectedConfig
+      ? items
+      : items.filter((item) => !item.configuration);
+
+    if (itemsToSave.length > 0) {
+      updateTryOnConfiguration(itemsToSave, trimmed).catch(() => {});
+    }
+
+    const exists = configs.some(
+      (config) => config.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (!exists) {
+      addTryOnConfig(user.id, trimmed).catch(() => {});
+    }
+
+    setSelectedConfig(trimmed);
+    setConfigName("");
+  };
+
+  const handleSelectConfig = (name: string) => {
+    setSelectedConfig((current) => (current === name ? null : name));
+  };
+
+  const handleDeleteConfig = (config: TryOnConfig) => {
+    if (!user) {
+      return;
+    }
+    deleteTryOnItemsByConfiguration(user.id, config.name).catch(() => {});
+    deleteTryOnConfig(config.id).catch(() => {});
+    if (selectedConfig === config.name) {
+      setSelectedConfig(null);
+    }
+  };
+
   const renderItem =
     (layer: TryOnItem["layer"]) =>
     ({ item, drag, isActive }: RenderItemParams<TryOnItem>) => (
@@ -145,19 +223,19 @@ export default function TryOnScreen() {
         <Text style={styles.subtitle}>{t("try_on.subtitle")}</Text>
       </View>
 
-      {items.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>
-            {isLoading ? t("home.empty_loading") : t("try_on.empty")}
-          </Text>
-          <Text style={styles.emptySubtitle}>{t("try_on.empty_subtitle")}</Text>
-        </View>
-      ) : (
-        <NestableScrollContainer
-          contentContainerStyle={styles.layers}
-          showsVerticalScrollIndicator={false}
-        >
-          {LAYERS.map((layer) => (
+      <NestableScrollContainer
+        contentContainerStyle={styles.layers}
+        showsVerticalScrollIndicator={false}
+      >
+        {items.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>
+              {isLoading ? t("home.empty_loading") : t("try_on.empty")}
+            </Text>
+            <Text style={styles.emptySubtitle}>{t("try_on.empty_subtitle")}</Text>
+          </View>
+        ) : (
+          LAYERS.map((layer) => (
             <View key={layer} style={styles.layerSection}>
               <Text style={styles.layerTitle}>{t(`try_on.layer_${layer}`)}</Text>
               {layerItems[layer].length === 0 ? (
@@ -176,9 +254,72 @@ export default function TryOnScreen() {
                 />
               )}
             </View>
-          ))}
-        </NestableScrollContainer>
-      )}
+          ))
+        )}
+
+        <View style={styles.configSection}>
+          <Text style={styles.configTitle}>{t("try_on.config_title")}</Text>
+          <View style={styles.configRow}>
+            <TextInput
+              placeholder={t("try_on.config_placeholder")}
+              placeholderTextColor={colors.muted}
+              value={configName}
+              onChangeText={setConfigName}
+              style={styles.configInput}
+            />
+            <Pressable
+              onPress={handleSaveConfig}
+              style={({ pressed }) => [
+                styles.configSaveButton,
+                pressed && styles.cardPressed,
+                !configName.trim() && styles.configSaveDisabled,
+              ]}
+              disabled={!configName.trim()}
+            >
+              <Text style={styles.configSaveText}>{t("try_on.config_save")}</Text>
+            </Pressable>
+          </View>
+
+          {configs.length === 0 ? (
+            <Text style={styles.configEmpty}>{t("try_on.config_empty")}</Text>
+          ) : (
+            <View style={styles.configList}>
+              {configs.map((config) => {
+                const isActive = selectedConfig === config.name;
+                return (
+                  <View key={config.id} style={styles.configItem}>
+                    <Pressable
+                      onPress={() => handleSelectConfig(config.name)}
+                      style={({ pressed }) => [
+                        styles.configChip,
+                        isActive && styles.configChipActive,
+                        pressed && styles.cardPressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.configChipText,
+                          isActive && styles.configChipTextActive,
+                        ]}
+                      >
+                        {config.name}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleDeleteConfig(config)}
+                      style={({ pressed }) => pressed && styles.cardPressed}
+                    >
+                      <Text style={styles.configDeleteText}>
+                        {t("try_on.config_delete")}
+                      </Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </NestableScrollContainer>
     </View>
   );
 }
@@ -299,5 +440,81 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     color: colors.muted,
     ...typography.body,
+  },
+  configSection: {
+    marginTop: spacing.md,
+    paddingBottom: spacing.xl,
+    gap: spacing.sm,
+  },
+  configTitle: {
+    color: colors.text,
+    ...typography.caption,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  configRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    alignItems: "center",
+  },
+  configInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    padding: spacing.sm,
+    color: colors.text,
+    backgroundColor: colors.card,
+  },
+  configSaveButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accent,
+  },
+  configSaveDisabled: {
+    opacity: 0.6,
+  },
+  configSaveText: {
+    color: colors.text,
+    ...typography.caption,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  configEmpty: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  configList: {
+    gap: spacing.xs,
+  },
+  configItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  configChip: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  configChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  configChipText: {
+    color: colors.text,
+    ...typography.caption,
+  },
+  configChipTextActive: {
+    color: colors.surface,
+  },
+  configDeleteText: {
+    color: "#8A1F1F",
+    ...typography.caption,
   },
 });

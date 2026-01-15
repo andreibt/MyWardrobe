@@ -23,6 +23,7 @@ export type TryOnItem = {
   title: string;
   imageUrl: string;
   color: string;
+  configuration: string | null;
   layer: "top" | "middle" | "bottom";
   order: number;
   createdAt?: Date | null;
@@ -30,8 +31,16 @@ export type TryOnItem = {
 
 const tryOnCollection = collection(db, "tryOnItems");
 
-export function subscribeToTryOnItems(ownerId: string, onChange: (items: TryOnItem[]) => void) {
-  const tryOnQuery = query(tryOnCollection, where("ownerId", "==", ownerId));
+export function subscribeToTryOnItems(
+  ownerId: string,
+  onChange: (items: TryOnItem[]) => void,
+  configuration?: string | null
+) {
+  const filters = [where("ownerId", "==", ownerId)];
+  if (configuration !== undefined) {
+    filters.push(where("configuration", "==", configuration));
+  }
+  const tryOnQuery = query(tryOnCollection, ...filters);
 
   return onSnapshot(tryOnQuery, (snapshot) => {
     const items = snapshot.docs.map((doc) => {
@@ -49,6 +58,7 @@ export function subscribeToTryOnItems(ownerId: string, onChange: (items: TryOnIt
         title: String(data.title ?? ""),
         imageUrl: String(data.imageUrl ?? ""),
         color: String(data.color ?? ""),
+        configuration: typeof data.configuration === "string" ? data.configuration : null,
         layer,
         order: typeof data.order === "number" ? data.order : 0,
         createdAt: data.createdAt?.toDate?.() ?? null,
@@ -91,6 +101,7 @@ export async function addTryOnItem(ownerId: string, item: WardrobeItem) {
     title: item.title ?? "",
     imageUrl: item.imageUrl ?? "",
     color: item.color ?? "",
+    configuration: null,
     layer: "middle",
     order: Date.now(),
     createdAt: serverTimestamp(),
@@ -116,6 +127,39 @@ export async function updateTryOnLayer(itemId: string, layer: TryOnItem["layer"]
     order,
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function updateTryOnConfiguration(items: TryOnItem[], configuration: string) {
+  const batch = writeBatch(db);
+  items.forEach((item, index) => {
+    const docRef = doc(db, "tryOnItems", item.id);
+    batch.update(docRef, {
+      configuration,
+      order: index,
+      updatedAt: serverTimestamp(),
+    });
+  });
+  await batch.commit();
+}
+
+export async function deleteTryOnItemsByConfiguration(
+  ownerId: string,
+  configuration: string
+) {
+  const itemsQuery = query(
+    tryOnCollection,
+    where("ownerId", "==", ownerId),
+    where("configuration", "==", configuration)
+  );
+  const snapshot = await getDocs(itemsQuery);
+  if (snapshot.empty) {
+    return;
+  }
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+  });
+  await batch.commit();
 }
 
 export async function deleteTryOnItem(itemId: string) {
