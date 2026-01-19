@@ -17,6 +17,7 @@ export type WardrobeItem = {
   title: string;
   description: string;
   imageUrl: string;
+  imageSerialized?: string;
   color: string;
   tags: string[];
   ownerId: string;
@@ -44,6 +45,7 @@ export function subscribeToWardrobeItems(
         title: data.title ?? "",
         description: data.description ?? "",
         imageUrl: data.imageUrl ?? "",
+        imageSerialized: typeof data.imageSerialized === "string" ? data.imageSerialized : "",
         color: data.color ?? "",
         tags: Array.isArray(data.tags) ? data.tags : [],
         ownerId: data.ownerId ?? ownerId,

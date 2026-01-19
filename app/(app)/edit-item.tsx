@@ -69,6 +69,7 @@ export default function EditItemScreen() {
   }>();
 
   const itemId = getParam(params.id);
+  const initialImageUrl = useMemo(() => getParam(params.imageUrl), [params.imageUrl]);
   const initialTags = useMemo(() => parseTags(params.tags), [params.tags]);
   const [tags, setTags] = useState<string[]>(initialTags);
   const {
@@ -80,7 +81,7 @@ export default function EditItemScreen() {
     defaultValues: {
       title: getParam(params.title),
       description: getParam(params.description),
-      imageUrl: getParam(params.imageUrl),
+      imageUrl: initialImageUrl,
       color: getParam(params.color),
     },
   });
@@ -94,7 +95,12 @@ export default function EditItemScreen() {
       return;
     }
 
-    await updateWardrobeItem(itemId, { ...data, tags });
+    const payload = {
+      ...data,
+      tags,
+      ...(data.imageUrl !== initialImageUrl ? { imageSerialized: "" } : {}),
+    };
+    await updateWardrobeItem(itemId, payload);
     router.replace("/(app)/(tabs)/home");
   };
 

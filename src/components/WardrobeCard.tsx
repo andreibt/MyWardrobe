@@ -20,10 +20,11 @@ export function WardrobeCard({
   onDelete,
 }: WardrobeCardProps) {
   const { t } = useI18n();
+  const imageUri = item.imageSerialized || item.imageUrl;
 
   return (
     <View style={styles.card}>
-      <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      <Image source={{ uri: imageUri }} style={styles.image} />
       <View style={styles.content}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>

@@ -1,5 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
+import * as ImageManipulator from "expo-image-manipulator";
+import * as ImagePicker from "expo-image-picker";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -34,7 +36,80 @@ type DriveErrorKey =
   | "add.drive.invalid_link"
   | "add.drive.request_failed"
   | "add.drive.no_images"
-  | "add.drive.load_error";
+  | "add.drive.load_error"
+  | "add.image.too_large"
+  | "add.upload.permission_denied"
+  | "add.upload.load_error";
+
+type DriveFile = {
+  id: string;
+  name: string;
+  mimeType: string;
+  iconLink?: string;
+  webViewLink?: string;
+  webContentLink?: string;
+};
+
+const MAX_IMAGE_BYTES = 900_000;
+const COMPRESSION_STEPS = [
+  { quality: 0.8 },
+  { maxWidth: 1600, quality: 0.75 },
+  { maxWidth: 1200, quality: 0.65 },
+  { maxWidth: 900, quality: 0.55 },
+  { maxWidth: 700, quality: 0.45 },
+] as const;
+
+const getBase64Size = (base64: string) => {
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.floor((base64.length * 3) / 4) - padding;
+};
+
+const getDataUrlSize = (dataUrl: string) => {
+  const commaIndex = dataUrl.indexOf(",");
+  const base64 = commaIndex === -1 ? dataUrl : dataUrl.slice(commaIndex + 1);
+  return getBase64Size(base64);
+};
+
+const readBlobAsDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    if (typeof FileReader === "undefined") {
+      reject(new Error("FileReader unavailable"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Failed to read image"));
+      }
+    };
+    reader.onerror = () => {
+      reject(reader.error ?? new Error("Failed to read image"));
+    };
+    reader.readAsDataURL(blob);
+  });
+
+const compressImageToDataUrl = async (uri: string) => {
+  for (const step of COMPRESSION_STEPS) {
+    const actions = step.maxWidth ? [{ resize: { width: step.maxWidth } }] : [];
+    const result = await ImageManipulator.manipulateAsync(uri, actions, {
+      compress: step.quality,
+      format: ImageManipulator.SaveFormat.JPEG,
+      base64: true,
+    });
+
+    if (!result.base64) {
+      continue;
+    }
+
+    if (getBase64Size(result.base64) <= MAX_IMAGE_BYTES) {
+      return `data:image/jpeg;base64,${result.base64}`;
+    }
+  }
+
+  return null;
+};
 
 export default function AddItemScreen() {
   const router = useRouter();
@@ -56,13 +131,14 @@ export default function AddItemScreen() {
   });
 
   const [driveFolderLink, setDriveFolderLink] = useState("");
-  const [driveFiles, setDriveFiles] = useState<
-    Array<{ id: string; name: string; mimeType: string; thumbnailLink?: string}>
-  >([]);
+  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
   const [driveError, setDriveError] = useState<DriveErrorKey | null>(null);
   const [isDriveLoading, setIsDriveLoading] = useState(false);
+  const [isImageProcessing, setIsImageProcessing] = useState(false);
+  const [imageSerialized, setImageSerialized] = useState("");
+  const [isDriveLoadHidden, setIsDriveLoadHidden] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
-  const isBusy = Boolean(isSubmitting);
+  const isBusy = Boolean(isSubmitting || isImageProcessing);
   const driveApiKey = "AIzaSyBeO6ZDVcS5PRzXic4mfbCJkqPB1s0dBFc";
 
   const folderId = useMemo(() => {
@@ -75,7 +151,11 @@ export default function AddItemScreen() {
       return;
     }
 
-    await addWardrobeItem(user.id, { ...data, tags });
+    await addWardrobeItem(user.id, {
+      ...data,
+      tags,
+      ...(imageSerialized ? { imageSerialized } : {}),
+    });
     router.replace("/(app)/(tabs)/home");
   };
 
@@ -90,7 +170,7 @@ export default function AddItemScreen() {
     try {
       const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
       const fields = encodeURIComponent(
-        "files(id,name,mimeType,thumbnailLink,webContentLink,webViewLink)"
+        "files(id,name,mimeType,webContentLink,webViewLink,iconLink)"
       );
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}&key=${driveApiKey}`
@@ -101,6 +181,7 @@ export default function AddItemScreen() {
       }
 
       const payload = await response.json();
+      console.log(payload)
       const files = Array.isArray(payload.files) ? payload.files : [];
       const imageFiles = files.filter((file: { mimeType?: string }) =>
         String(file.mimeType || "").startsWith("image/")
@@ -120,10 +201,88 @@ export default function AddItemScreen() {
     }
   };
 
-  const handleSelectDriveFile = (thumbnailLink: string) => {
-    // const imageUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-    const imageUrl = thumbnailLink;
-    setValue("imageUrl", imageUrl, { shouldValidate: true });
+  const handleSelectDriveFile = async (file: DriveFile) => {
+    if (!file.webContentLink) {
+      setDriveError("add.drive.load_error");
+      return;
+    }
+    setDriveError(null);
+    setIsImageProcessing(true);
+    try {
+      const dataUrl = await compressImageToDataUrl(file.webContentLink);
+      if (!dataUrl) {
+        setImageSerialized("");
+        setDriveError("add.image.too_large");
+        return;
+      }
+      setImageSerialized(dataUrl);
+      setValue("imageUrl", file.webContentLink, { shouldValidate: true });
+    } catch {
+      try {
+        const response = await fetch(file.webContentLink);
+        if (!response.ok) {
+          throw new Error("add.drive.load_error");
+        }
+        const blob = await response.blob();
+        const dataUrl = await readBlobAsDataUrl(blob);
+        if (getDataUrlSize(dataUrl) > MAX_IMAGE_BYTES) {
+          setImageSerialized("");
+          setDriveError("add.image.too_large");
+          return;
+        }
+        setImageSerialized(dataUrl);
+        setValue("imageUrl", file.webContentLink, { shouldValidate: true });
+      } catch {
+        setImageSerialized("");
+        setDriveError("add.drive.load_error");
+      }
+    } finally {
+      setIsImageProcessing(false);
+    }
+  };
+
+  const handleUploadImage = async () => {
+    setDriveError(null);
+    setIsImageProcessing(true);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setDriveError("add.upload.permission_denied");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        base64: false,
+        quality: 1,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const asset = result.assets?.[0];
+      if (!asset?.uri) {
+        setDriveError("add.upload.load_error");
+        return;
+      }
+
+      const dataUrl = await compressImageToDataUrl(asset.uri);
+      if (!dataUrl) {
+        setImageSerialized("");
+        setDriveError("add.image.too_large");
+        return;
+      }
+      setImageSerialized(dataUrl);
+      setValue("imageUrl", 'localhost:8080', { shouldValidate: true });
+      setDriveFiles([]);
+      setDriveFolderLink("");
+      setIsDriveLoadHidden(true);
+    } catch {
+      setDriveError("add.upload.load_error");
+    } finally {
+      setIsImageProcessing(false);
+    }
   };
 
   return (
@@ -188,7 +347,18 @@ export default function AddItemScreen() {
                 style={styles.input}
                 value={value}
                 onBlur={onBlur}
-                onChangeText={onChange}
+                onChangeText={(nextValue) => {
+                  onChange(nextValue);
+                  if (imageSerialized) {
+                    setImageSerialized("");
+                  }
+                  if (isDriveLoadHidden) {
+                    setIsDriveLoadHidden(false);
+                  }
+                  if (driveError) {
+                    setDriveError(null);
+                  }
+                }}
                 autoCapitalize="none"
               />
             )}
@@ -196,54 +366,85 @@ export default function AddItemScreen() {
           {errors.imageUrl ? (
             <Text style={styles.error}>{errors.imageUrl.message}</Text>
           ) : null}
+          {isImageProcessing ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : imageSerialized ? (
+            <Image source={{ uri: imageSerialized }} style={styles.previewImage} />
+          ) : null}
 
           <View style={styles.divider} />
-          <Text style={styles.label}>{t("add.label.drive")}</Text>
-          <TextInput
-            placeholder={t("add.placeholder.drive_url")}
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={driveFolderLink}
-            onChangeText={setDriveFolderLink}
-            autoCapitalize="none"
-          />
+          {!isDriveLoadHidden ? (
+            <>
+              <Text style={styles.label}>{t("add.label.drive")}</Text>
+              <TextInput
+                placeholder={t("add.placeholder.drive_url")}
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                value={driveFolderLink}
+                onChangeText={setDriveFolderLink}
+                autoCapitalize="none"
+              />
+              <Pressable
+                onPress={handleLoadDriveFiles}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.secondaryButton,
+                  pressed && styles.buttonPressed,
+                  (isDriveLoading || isImageProcessing) && styles.buttonDisabled,
+                ]}
+                disabled={isDriveLoading || isImageProcessing}
+              >
+                {isDriveLoading ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <Text style={styles.secondaryButtonText}>
+                    {t("add.drive.load_button")}
+                  </Text>
+                )}
+              </Pressable>
+              {driveFiles.length > 0 ? (
+                <View style={styles.driveGrid}>
+                  {driveFiles.map((file) => (
+                    <Pressable
+                      key={file.id}
+                      onPress={() => handleSelectDriveFile(file)}
+                      style={styles.driveItem}
+                      disabled={isImageProcessing}
+                    >
+                      {file.webContentLink ? (
+                        <Image
+                          source={{ uri: file.webContentLink }}
+                          style={styles.driveImage}
+                        />
+                      ) : (
+                        <View style={styles.drivePlaceholder} />
+                      )}
+                      <Text style={styles.driveLabel} numberOfLines={1}>
+                        {file.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+            </>
+          ) : null}
           <Pressable
-            onPress={handleLoadDriveFiles}
+            onPress={handleUploadImage}
             style={({ pressed }) => [
               styles.button,
               styles.secondaryButton,
               pressed && styles.buttonPressed,
-              isDriveLoading && styles.buttonDisabled,
+              isImageProcessing && styles.buttonDisabled,
             ]}
-            disabled={isDriveLoading}
+            disabled={isImageProcessing}
           >
-            {isDriveLoading ? (
+            {isImageProcessing ? (
               <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={styles.secondaryButtonText}>{t("add.drive.load_button")}</Text>
+              <Text style={styles.secondaryButtonText}>{t("add.upload.button")}</Text>
             )}
           </Pressable>
           {driveError ? <Text style={styles.error}>{t(driveError)}</Text> : null}
-          {driveFiles.length > 0 ? (
-            <View style={styles.driveGrid}>
-              {driveFiles.map((file) => (
-                <Pressable
-                  key={file.id}
-                  onPress={() => handleSelectDriveFile(file.thumbnailLink || '')}
-                  style={styles.driveItem}
-                >
-                  {file.thumbnailLink ? ( 
-                    <Image source={{ uri: file.thumbnailLink }} style={styles.driveImage} />
-                  ) : (
-                    <View style={styles.drivePlaceholder} />
-                  )}
-                  <Text style={styles.driveLabel} numberOfLines={1}>
-                    {file.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
 
           <Text style={styles.label}>{t("add.label.color")}</Text>
           <Controller
@@ -361,6 +562,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
+  },
+  previewImage: {
+    width: "100%",
+    height: 180,
+    borderRadius: radius.sm,
+    backgroundColor: colors.card,
+    marginTop: spacing.xs,
   },
   driveItem: {
     width: "48%",

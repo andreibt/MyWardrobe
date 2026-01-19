@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Image,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
   useWindowDimensions,
 } from "react-native";
-import {
+import DraggableFlatList, {
   NestableDraggableFlatList,
   NestableScrollContainer,
   type RenderItemParams,
@@ -35,6 +37,13 @@ import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
 import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 
 const LAYERS: TryOnItem["layer"][] = ["top", "middle", "bottom"];
+// Nestable components call findNodeHandle, which errors on web.
+const ScrollContainer =
+  Platform.OS === "web" ? ScrollView : NestableScrollContainer;
+const DraggableList =
+  Platform.OS === "web"
+    ? DraggableFlatList
+    : (NestableDraggableFlatList as typeof DraggableFlatList);
 
 export default function TryOnScreen() {
   const { user } = useAuth();
@@ -178,45 +187,48 @@ export default function TryOnScreen() {
 
   const renderItem =
     (layer: TryOnItem["layer"]) =>
-    ({ item, drag, isActive }: RenderItemParams<TryOnItem>) => (
-      <Pressable
-        onLongPress={drag}
-        disabled={isActive}
-        style={[styles.card, { width: tileSize }, isActive && styles.cardActive]}
-      >
-        <Image source={{ uri: item.imageUrl }} style={styles.image} />
-        <View style={styles.cardFooter}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <View style={styles.layerRow}>
-            {LAYERS.map((key) => (
-              <Pressable
-                key={`${item.id}-${key}`}
-                onPress={() => handleLayerChange(item, key)}
-                style={({ pressed }) => [
-                  styles.layerChip,
-                  key === layer && styles.layerChipActive,
-                  pressed && styles.cardPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.layerChipText,
-                    key === layer && styles.layerChipTextActive,
+    ({ item, drag, isActive }: RenderItemParams<TryOnItem>) => {
+      const imageUri = item.imageSerialized || item.imageUrl;
+      return (
+        <Pressable
+          onLongPress={drag}
+          disabled={isActive}
+          style={[styles.card, { width: tileSize }, isActive && styles.cardActive]}
+        >
+          <Image source={{ uri: imageUri }} style={styles.image} />
+          <View style={styles.cardFooter}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <View style={styles.layerRow}>
+              {LAYERS.map((key) => (
+                <Pressable
+                  key={`${item.id}-${key}`}
+                  onPress={() => handleLayerChange(item, key)}
+                  style={({ pressed }) => [
+                    styles.layerChip,
+                    key === layer && styles.layerChipActive,
+                    pressed && styles.cardPressed,
                   ]}
                 >
-                  {t(`try_on.layer_${key}`)}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    style={[
+                      styles.layerChipText,
+                      key === layer && styles.layerChipTextActive,
+                    ]}
+                  >
+                    {t(`try_on.layer_${key}`)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
+              <Text style={styles.deleteText}>{t("try_on.delete_button")}</Text>
+            </Pressable>
           </View>
-          <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
-            <Text style={styles.deleteText}>{t("try_on.delete_button")}</Text>
-          </Pressable>
-        </View>
-      </Pressable>
-    );
+        </Pressable>
+      );
+    };
 
   return (
     <View style={styles.container}>
@@ -225,7 +237,7 @@ export default function TryOnScreen() {
         <Text style={styles.subtitle}>{t("try_on.subtitle")}</Text>
       </View>
 
-      <NestableScrollContainer
+      <ScrollContainer
         contentContainerStyle={styles.layers}
         showsVerticalScrollIndicator={false}
       >
@@ -243,7 +255,7 @@ export default function TryOnScreen() {
               {layerItems[layer].length === 0 ? (
                 <Text style={styles.layerEmpty}>{t("try_on.layer_empty")}</Text>
               ) : (
-                <NestableDraggableFlatList
+                <DraggableList
                   data={layerItems[layer]}
                   keyExtractor={(item) => item.id}
                   onDragEnd={handleDragEnd(layer)}
@@ -321,7 +333,7 @@ export default function TryOnScreen() {
             </View>
           )}
         </View>
-      </NestableScrollContainer>
+      </ScrollContainer>
     </View>
   );
 }

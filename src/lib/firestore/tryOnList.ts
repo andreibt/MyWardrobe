@@ -22,6 +22,7 @@ export type TryOnItem = {
   wardrobeItemId: string;
   title: string;
   imageUrl: string;
+  imageSerialized?: string;
   color: string;
   configuration: string | null;
   layer: "top" | "middle" | "bottom";
@@ -57,6 +58,7 @@ export function subscribeToTryOnItems(
         wardrobeItemId: data.wardrobeItemId ?? "",
         title: String(data.title ?? ""),
         imageUrl: String(data.imageUrl ?? ""),
+        imageSerialized: typeof data.imageSerialized === "string" ? data.imageSerialized : "",
         color: String(data.color ?? ""),
         configuration: typeof data.configuration === "string" ? data.configuration : null,
         layer,
@@ -105,6 +107,7 @@ export async function addTryOnItem(
     wardrobeItemId: item.id,
     title: item.title ?? "",
     imageUrl: item.imageUrl ?? "",
+    ...(item.imageSerialized ? { imageSerialized: item.imageSerialized } : {}),
     color: item.color ?? "",
     configuration,
     layer: "middle",
