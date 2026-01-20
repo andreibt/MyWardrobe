@@ -87,9 +87,14 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.mywardrobe"
+    namespace "com.anonymous.mywardrobe"
+
+    buildFeatures {
+        buildConfig true
+    }
+    
     defaultConfig {
-        applicationId "com.mywardrobe"
+        applicationId "com.anonymous.mywardrobe"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -180,3 +185,5 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply plugin: "com.google.gms.google-services"

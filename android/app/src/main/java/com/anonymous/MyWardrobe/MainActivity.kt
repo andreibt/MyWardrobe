@@ -1,4 +1,4 @@
-package com.anonymous.MyWardrobe
+package com.anonymous.mywardrobe
 
 import android.os.Build
 import android.os.Bundle

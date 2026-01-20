@@ -2,13 +2,14 @@
   "expo": {
     "scheme": "acme",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-notifications"
     ],
     "name": "MyWardrobe",
     "slug": "MyWardrobe",
     "android": {
       "googleServicesFile": "./google-services.json",
-      "package": "com.anonymous.MyWardrobe"
+      "package": "com.anonymous.mywardrobe"
     },
     "ios": {
       "googleServicesFile": "./GoogleService-Info.plist"

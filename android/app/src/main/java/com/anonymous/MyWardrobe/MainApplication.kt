@@ -1,7 +1,8 @@
-package com.anonymous.MyWardrobe
+package com.anonymous.mywardrobe
 
 import android.app.Application
 import android.content.res.Configuration
+import com.anonymous.mywardrobe.BuildConfig
 
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
