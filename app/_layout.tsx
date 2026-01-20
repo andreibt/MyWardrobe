@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "../src/providers/AuthProvider";
 import { I18nProvider } from "../src/i18n/I18nProvider";
 import { TryOnConfigProvider } from "../src/providers/TryOnConfigProvider";
+import { NotificationsProvider } from "../src/providers/NotificationsProvider";
 
 export default function RootLayout() {
   return (
@@ -12,8 +13,10 @@ export default function RootLayout() {
       <I18nProvider>
         <TryOnConfigProvider>
           <AuthProvider>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false }} />
+            <NotificationsProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false }} />
+            </NotificationsProvider>
           </AuthProvider>
         </TryOnConfigProvider>
       </I18nProvider>

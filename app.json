@@ -5,6 +5,12 @@
       "expo-router"
     ],
     "name": "MyWardrobe",
-    "slug": "MyWardrobe"
+    "slug": "MyWardrobe",
+    "android": {
+      "googleServicesFile": "./google-services.json"
+    },
+    "ios": {
+      "googleServicesFile": "./GoogleService-Info.plist"
+    }
   }
 }
