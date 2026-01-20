@@ -7,7 +7,8 @@
     "name": "MyWardrobe",
     "slug": "MyWardrobe",
     "android": {
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "package": "com.anonymous.MyWardrobe"
     },
     "ios": {
       "googleServicesFile": "./GoogleService-Info.plist"
