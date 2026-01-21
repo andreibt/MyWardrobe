@@ -48,6 +48,7 @@ type DriveFile = {
   iconLink?: string;
   webViewLink?: string;
   webContentLink?: string;
+  thumbnailLink?: string;
 };
 
 const MAX_IMAGE_BYTES = 900_000;
@@ -170,7 +171,7 @@ export default function AddItemScreen() {
     try {
       const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
       const fields = encodeURIComponent(
-        "files(id,name,mimeType,webContentLink,webViewLink,iconLink)"
+        "files(id,name,mimeType,webContentLink,webViewLink,iconLink, thumbnailLink)"
       );
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}&key=${driveApiKey}`
@@ -411,9 +412,9 @@ export default function AddItemScreen() {
                       style={styles.driveItem}
                       disabled={isImageProcessing}
                     >
-                      {file.webContentLink ? (
+                      {file.thumbnailLink ? (
                         <Image
-                          source={{ uri: file.webContentLink }}
+                          source={{ uri: file.thumbnailLink }}
                           style={styles.driveImage}
                         />
                       ) : (
