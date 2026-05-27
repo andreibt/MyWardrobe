@@ -1,0 +1,2 @@
+Add a new Tab Assistant. The tab will be a chat text where the user will comunicate with a chat agent. The Agent is ollama with gemma4 model installed locally we use http://localhost:11434/api/generate for the request. Make the call to the agent easy 
+to change. The request body will have model and prompt attribute, where prompt is what the user enters.

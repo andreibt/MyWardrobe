@@ -45,6 +45,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="assistant"
+        options={{
+          title: t("tabs.assistant"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="robot-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: t("tabs.settings"),
