@@ -89,6 +89,7 @@
   "card.try_on": "Try on",
   "card.try_on_remove": "Eliminate Try on",
   "card.delete": "Delete",
+  "card.close": "Close",
   "try_on.title": "Try on",
   "try_on.subtitle": "Drag to rearrange your look and remove anything you don't want to try.",
   "try_on.empty": "No items in your try-on list yet.",
