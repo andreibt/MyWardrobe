@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     backgroundColor: colors.primary,
     paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     alignItems: "center",
   },
   buttonPressed: {
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: colors.surface,
+    color: colors.background,
     // ...typography.h2,
   },
   link: {

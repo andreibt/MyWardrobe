@@ -1,12 +1,15 @@
 export const colors = {
-  background: "#F5F1EA",
-  surface: "#FFFFFF",
-  text: "#1B1B1B",
-  muted: "#6C6A66",
-  primary: "#2D5A4E",
-  accent: "#E0A458",
-  border: "#E6DFD4",
-  card: "#FFF8EE",
+  background: "#0F172A",
+  surface: "#111827",
+  text: "#F8FAFC",
+  muted: "#94A3B8",
+  primary: "#38BDF8",
+  accent: "#22C55E",
+  border: "#243244",
+  card: "#1E293B",
+  danger: "#F87171",
+  dangerSurface: "#3B1720",
+  successSurface: "#123524",
 };
 
 export const spacing = {
@@ -18,9 +21,10 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 10,
-  md: 16,
-  lg: 24,
+  sm: 14,
+  md: 20,
+  lg: 28,
+  pill: 999,
 };
 
 export const typography = {

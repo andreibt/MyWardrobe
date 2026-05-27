@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   layerChip: {
     paddingVertical: 2,
     paddingHorizontal: spacing.xs,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -433,11 +433,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
-    borderRadius: radius.sm,
-    backgroundColor: "#FDECEC",
+    borderRadius: radius.pill,
+    backgroundColor: colors.dangerSurface,
   },
   deleteText: {
-    color: "#8A1F1F",
+    color: colors.danger,
     ...typography.caption,
   },
   cardPressed: {
@@ -483,14 +483,14 @@ const styles = StyleSheet.create({
   configSaveButton: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     backgroundColor: colors.accent,
   },
   configSaveDisabled: {
     opacity: 0.6,
   },
   configSaveText: {
-    color: colors.text,
+    color: colors.background,
     ...typography.caption,
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   configChip: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     color: colors.surface,
   },
   configDeleteText: {
-    color: "#8A1F1F",
+    color: colors.danger,
     ...typography.caption,
   },
 });

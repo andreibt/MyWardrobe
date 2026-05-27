@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
@@ -106,19 +106,19 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   deleteButton: {
-    backgroundColor: "#FDECEC",
-    borderColor: "#F2C5C5",
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.danger,
   },
   deleteText: {
-    color: "#8A1F1F",
+    color: colors.danger,
     ...typography.caption,
   },
   tryOnButton: {
-    backgroundColor: "#E9F2E0",
-    borderColor: "#C5DBC0",
+    backgroundColor: colors.successSurface,
+    borderColor: colors.accent,
   },
   tryOnText: {
-    color: "#2D5A4E",
+    color: colors.accent,
     ...typography.caption,
   },
 });

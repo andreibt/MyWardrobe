@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   tagChip: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -228,11 +228,11 @@ const styles = StyleSheet.create({
   addButton: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     backgroundColor: colors.accent,
   },
   addButtonText: {
-    color: colors.text,
+    color: colors.background,
     ...typography.caption,
   },
   manageList: {
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     ...typography.body,
   },
   deleteText: {
-    color: "#8A1F1F",
+    color: colors.danger,
     ...typography.caption,
   },
   buttonPressed: {

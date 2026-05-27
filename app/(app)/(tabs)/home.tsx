@@ -20,6 +20,8 @@ import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
 import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
@@ -31,6 +33,8 @@ export default function HomeScreen() {
   const [tags, setTags] = useState<WardrobeTag[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [tryOnItems, setTryOnItems] = useState<TryOnItem[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   useEffect(() => {
     if (!user) {
@@ -78,6 +82,21 @@ export default function HomeScreen() {
       (item.tags ?? []).some((tag) => tagFilters.includes(tag))
     );
   }, [items, tagFilters]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredItems.slice(startIndex, startIndex + pageSize);
+  }, [currentPage, filteredItems, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize, tagFilters]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const toggleFilter = (tag: string) => {
     if (tagFilters.includes(tag)) {
@@ -128,11 +147,11 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={filteredItems}
+        data={paginatedItems}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        initialNumToRender={4}
-        maxToRenderPerBatch={4}
+        initialNumToRender={pageSize}
+        maxToRenderPerBatch={pageSize}
         updateCellsBatchingPeriod={50}
         windowSize={5}
         removeClippedSubviews={Platform.OS !== "web"}
@@ -239,6 +258,68 @@ export default function HomeScreen() {
             </Text>
           </View>
         }
+        ListFooterComponent={
+          filteredItems.length > 0 ? (
+            <View style={styles.pagination}>
+              <View style={styles.pageSizeSection}>
+                <Text style={styles.paginationLabel}>{t("home.page_size")}</Text>
+                <View style={styles.pageSizeOptions}>
+                  {PAGE_SIZE_OPTIONS.map((option) => {
+                    const isActive = pageSize === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setPageSize(option)}
+                        style={({ pressed }) => [
+                          styles.pageSizeButton,
+                          isActive && styles.pageSizeButtonActive,
+                          pressed && styles.buttonPressed,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pageSizeButtonText,
+                            isActive && styles.pageSizeButtonTextActive,
+                          ]}
+                        >
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.pageControls}>
+                <Pressable
+                  disabled={currentPage === 1}
+                  onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  style={({ pressed }) => [
+                    styles.pageButton,
+                    currentPage === 1 && styles.pageButtonDisabled,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text style={styles.pageButtonText}>{t("home.page_previous")}</Text>
+                </Pressable>
+                <Text style={styles.pageStatus}>
+                  {t("home.page_status", { page: currentPage, total: totalPages })}
+                </Text>
+                <Pressable
+                  disabled={currentPage === totalPages}
+                  onPress={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  style={({ pressed }) => [
+                    styles.pageButton,
+                    currentPage === totalPages && styles.pageButtonDisabled,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text style={styles.pageButtonText}>{t("home.page_next")}</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null
+        }
       />
     </View>
   );
@@ -268,7 +349,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -288,7 +369,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -319,7 +400,7 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -339,11 +420,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     backgroundColor: colors.accent,
   },
   clearButtonText: {
-    color: colors.text,
+    color: colors.background,
     ...typography.caption,
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -353,10 +434,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
   },
   addButtonText: {
-    color: colors.text,
+    color: colors.background,
     ...typography.body,
   },
   separator: {
@@ -373,6 +454,77 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     color: colors.muted,
     ...typography.body,
+  },
+  pagination: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: spacing.md,
+  },
+  pageSizeSection: {
+    gap: spacing.xs,
+  },
+  paginationLabel: {
+    color: colors.muted,
+    ...typography.caption,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  pageSizeOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  pageSizeButton: {
+    minWidth: 44,
+    alignItems: "center",
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  pageSizeButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  pageSizeButtonText: {
+    color: colors.text,
+    ...typography.caption,
+  },
+  pageSizeButtonTextActive: {
+    color: colors.background,
+  },
+  pageControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  pageButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pageButtonDisabled: {
+    opacity: 0.45,
+  },
+  pageButtonText: {
+    color: colors.primary,
+    ...typography.caption,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  pageStatus: {
+    flex: 1,
+    textAlign: "center",
+    color: colors.muted,
+    ...typography.caption,
   },
   buttonPressed: {
     opacity: 0.85,
