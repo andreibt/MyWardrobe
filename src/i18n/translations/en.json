@@ -56,6 +56,8 @@
   "login.placeholder.email": "you@example.com",
   "login.placeholder.password": "Your password",
   "login.button": "Log in",
+  "login.error_invalid_credentials": "Invalid email or password.",
+  "login.error_generic": "We could not log you in. Please try again.",
   "login.footer": "New here? We can add sign-up next.",
   "login.language_label": "Language",
   "login.language_en": "English",
