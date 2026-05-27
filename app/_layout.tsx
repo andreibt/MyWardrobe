@@ -6,6 +6,7 @@ import { AuthProvider } from "../src/providers/AuthProvider";
 import { I18nProvider } from "../src/i18n/I18nProvider";
 import { TryOnConfigProvider } from "../src/providers/TryOnConfigProvider";
 import { NotificationsProvider } from "../src/providers/NotificationsProvider";
+import { colors } from "../src/theme/tokens";
 
 export default function RootLayout() {
   return (
@@ -14,7 +15,7 @@ export default function RootLayout() {
         <TryOnConfigProvider>
           <AuthProvider>
             <NotificationsProvider>
-              <StatusBar style="dark" />
+              <StatusBar style="light" backgroundColor={colors.background} />
               <Stack screenOptions={{ headerShown: false }} />
             </NotificationsProvider>
           </AuthProvider>

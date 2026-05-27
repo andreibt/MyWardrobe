@@ -1,4 +1,5 @@
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useI18n } from "../i18n/I18nProvider";
 import type { WardrobeItem } from "../lib/firestore/wardrobeItems";
@@ -20,11 +21,49 @@ export function WardrobeCard({
   onDelete,
 }: WardrobeCardProps) {
   const { t } = useI18n();
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const imageUri = item.imageSerialized || item.imageUrl;
 
   return (
     <View style={styles.card}>
-      <Image source={{ uri: imageUri }} style={styles.image} />
+      <Pressable
+        onPress={() => setIsImagePreviewOpen(true)}
+        style={({ pressed }) => [styles.imageButton, pressed && styles.imageButtonPressed]}
+        accessibilityRole="imagebutton"
+        accessibilityLabel={item.title}
+      >
+        <Image source={{ uri: imageUri }} style={styles.image} />
+      </Pressable>
+      <Modal
+        visible={isImagePreviewOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsImagePreviewOpen(false)}
+      >
+        <View style={styles.previewOverlay}>
+          <Pressable
+            style={styles.previewBackdrop}
+            onPress={() => setIsImagePreviewOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t("card.close")}
+          />
+          <View style={styles.previewContent}>
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.previewImage}
+              resizeMode="contain"
+            />
+            <Pressable
+              onPress={() => setIsImagePreviewOpen(false)}
+              style={({ pressed }) => [styles.closeButton, pressed && styles.imageButtonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t("card.close")}
+            >
+              <Text style={styles.closeButtonText}>{t("card.close")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <View style={styles.content}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
@@ -72,6 +111,43 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 160,
   },
+  imageButton: {
+    backgroundColor: colors.card,
+  },
+  imageButtonPressed: {
+    opacity: 0.85,
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.86)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.md,
+  },
+  previewBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  previewContent: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  previewImage: {
+    width: "100%",
+    height: "88%",
+  },
+  closeButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+  },
+  closeButtonText: {
+    color: colors.text,
+    ...typography.body,
+  },
   content: {
     padding: spacing.md,
     gap: spacing.xs,
@@ -96,7 +172,7 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
@@ -106,19 +182,19 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   deleteButton: {
-    backgroundColor: "#FDECEC",
-    borderColor: "#F2C5C5",
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.danger,
   },
   deleteText: {
-    color: "#8A1F1F",
+    color: colors.danger,
     ...typography.caption,
   },
   tryOnButton: {
-    backgroundColor: "#E9F2E0",
-    borderColor: "#C5DBC0",
+    backgroundColor: colors.successSurface,
+    borderColor: colors.accent,
   },
   tryOnText: {
-    color: "#2D5A4E",
+    color: colors.accent,
     ...typography.caption,
   },
 });

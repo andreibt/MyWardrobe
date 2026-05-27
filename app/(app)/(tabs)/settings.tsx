@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   languageButton: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -116,13 +116,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
   },
   buttonPressed: {
     opacity: 0.85,
   },
   buttonText: {
-    color: colors.surface,
+    color: colors.background,
     ...typography.body,
   },
 });

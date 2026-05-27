@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
+import { useState } from "react";
 import { z } from "zod";
 import {
   ActivityIndicator,
@@ -25,10 +26,27 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
+const getLoginErrorKey = (error: unknown) => {
+  if (typeof error !== "object" || error === null) {
+    return "login.error_generic";
+  }
+
+  const payload = error as { code?: string; message?: string };
+  if (
+    payload.code === "auth/invalid-credential" ||
+    payload.message?.includes("INVALID_LOGIN_CREDENTIALS")
+  ) {
+    return "login.error_invalid_credentials";
+  }
+
+  return "login.error_generic";
+};
+
 export default function LoginScreen() {
   const { signIn, isLoading } = useAuth();
   const router = useRouter();
   const { t, language, setLanguage } = useI18n();
+  const [loginError, setLoginError] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
@@ -42,8 +60,13 @@ export default function LoginScreen() {
   });
 
   const onSubmit = async (data: LoginForm) => {
-    await signIn(data.email, data.password);
-    router.replace("/(app)/tutorial");
+    setLoginError(null);
+    try {
+      await signIn(data.email, data.password);
+      router.replace("/(app)/tutorial");
+    } catch (error) {
+      setLoginError(getLoginErrorKey(error));
+    }
   };
 
   return (
@@ -112,12 +135,15 @@ export default function LoginScreen() {
                 style={styles.input}
                 value={value}
                 onBlur={onBlur}
-                onChangeText={onChange}
+                onChangeText={(nextValue) => {
+                  setLoginError(null);
+                  onChange(nextValue);
+                }}
               />
             )}
           />
           {errors.email ? (
-            <Text style={styles.error}>{t(errors.email.message)}</Text>
+            <Text style={styles.error}>{t(errors.email.message ?? "")}</Text>
           ) : null}
 
           <Text style={styles.label}>{t("login.label.password")}</Text>
@@ -133,13 +159,17 @@ export default function LoginScreen() {
                 style={styles.input}
                 value={value}
                 onBlur={onBlur}
-                onChangeText={onChange}
+                onChangeText={(nextValue) => {
+                  setLoginError(null);
+                  onChange(nextValue);
+                }}
               />
             )}
           />
           {errors.password ? (
-            <Text style={styles.error}>{t(errors.password.message)}</Text>
+            <Text style={styles.error}>{t(errors.password.message ?? "")}</Text>
           ) : null}
+          {loginError ? <Text style={styles.error}>{t(loginError)}</Text> : null}
 
           <Pressable
             disabled={isLoading}
@@ -191,7 +221,7 @@ const styles = StyleSheet.create({
   languageButton: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -248,7 +278,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     backgroundColor: colors.primary,
     paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     alignItems: "center",
   },
   buttonPressed: {
@@ -258,7 +288,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: colors.surface,
+    color: colors.background,
     ...typography.h2,
   },
   footer: {
