@@ -1,10 +1,10 @@
-import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import { colors } from "../../../src/theme/tokens";
 
-export default function TabsLayout() {
+export default function WardrobeTabsLayout() {
   const { t } = useI18n();
 
   return (
@@ -27,9 +27,8 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="module-home"
         options={{
-          headerShown: false,
           title: t("tabs.home"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home-outline" color={color} size={size} />
@@ -37,7 +36,34 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="wardrobe-list"
+        options={{
+          title: t("tabs.wardrobe_list"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="wardrobe-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="try-on"
+        options={{
+          title: t("tabs.try_on"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="tshirt-crew-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="assistant"
+        options={{
+          title: t("tabs.assistant"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="robot-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="module-settings"
         options={{
           title: t("tabs.settings"),
           tabBarIcon: ({ color, size }) => (

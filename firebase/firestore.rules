@@ -11,5 +11,55 @@ service cloud.firestore {
         && request.query != null
         && request.query.where('ownerId', '==', request.auth.uid);
     }
+
+    match /wardrobeTags/{itemId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+    
+     match /tryOnItems/{itemId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+    
+     match /tryOnConfigs/{itemId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
+    match /fridgeItems/{itemId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
+    match /fridgeTags/{tagId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
   }
 }

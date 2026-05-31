@@ -15,7 +15,7 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={user ? "/(app)/(tabs)/wardrobe-list" : "/(auth)/login"} />;
+  return <Redirect href={user ? "/(app)/(tabs)/home" : "/(auth)/login"} />;
 }
 
 const styles = StyleSheet.create({

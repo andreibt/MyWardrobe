@@ -1,2 +1,2 @@
-On the the tryOn tab create a button Suggestion. Send a prompt to the assistent that contains the full list of the wardrobe, but as an array with json items. An item looks like this {ownerId, color, tags}.
-The prompt will be "itemsJsonList using this list select the best outfit for today. Today is a summer warm day. Return a list of OwnerId". Using the Ownerids returned from the prompt create a TryOn Config. 
+Make the fridge list with the same layout as wardrobe-list, pagination, filters by tags, grid or list view and Add Button to add new fridge item. The Fridge item
+form will have Name, Description, quantity, quantity type, expiration date, calories, image and tags. Quantity type will be a dropdown with g, kg, mL, L or unit

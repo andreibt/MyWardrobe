@@ -80,8 +80,15 @@
         "app/(auth)/login.tsx",
         "app/(auth)/register.tsx",
         "app/(app)/_layout.tsx (protected area)",
-        "app/(app)/(tabs)/wardrobe-list.tsx",
+        "app/(app)/(tabs)/home.tsx",
         "app/(app)/(tabs)/settings.tsx",
+        "app/(app)/(wardrobe)/wardrobe-list.tsx",
+        "app/(app)/(wardrobe)/try-on.tsx",
+        "app/(app)/(wardrobe)/assistant.tsx",
+        "app/(app)/(fridge)/fridge-list.tsx",
+        "app/(app)/add-fridge-item.tsx",
+        "app/(app)/(fridge)/recipes.tsx",
+        "app/(app)/(fridge)/assistant.tsx",
         "app/_layout.tsx (root provider + auth gate)"
       ],
       "src": [
