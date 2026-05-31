@@ -6,7 +6,7 @@ import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from "re
 import { FridgeCard } from "../../../src/components/FridgeCard";
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import {
-  deleteFridgeItem,
+  archiveFridgeItem,
   subscribeToFridgeItems,
   type FridgeItem,
 } from "../../../src/lib/firestore/fridgeItems";
@@ -19,6 +19,7 @@ import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
 type ViewMode = "list" | "grid";
+type InventoryMode = "active" | "history";
 
 export default function FridgeListScreen() {
   const { t } = useI18n();
@@ -32,7 +33,9 @@ export default function FridgeListScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [inventoryMode, setInventoryMode] = useState<InventoryMode>("active");
   const isGridView = viewMode === "grid";
+  const isHistoryView = inventoryMode === "history";
 
   useEffect(() => {
     if (!user) {
@@ -55,11 +58,12 @@ export default function FridgeListScreen() {
   }, [user]);
 
   const filteredItems = useMemo(() => {
+    const inventoryItems = items.filter((item) => item.isHistory === isHistoryView);
     if (tagFilters.length === 0) {
-      return items;
+      return inventoryItems;
     }
-    return items.filter((item) => item.tags.some((tag) => tagFilters.includes(tag)));
-  }, [items, tagFilters]);
+    return inventoryItems.filter((item) => item.tags.some((tag) => tagFilters.includes(tag)));
+  }, [isHistoryView, items, tagFilters]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const paginatedItems = useMemo(() => {
@@ -69,7 +73,7 @@ export default function FridgeListScreen() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [pageSize, tagFilters]);
+  }, [inventoryMode, pageSize, tagFilters]);
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -81,17 +85,17 @@ export default function FridgeListScreen() {
     );
   };
 
-  const confirmDelete = (itemId: string) => {
-    const handleDelete = () => deleteFridgeItem(itemId).catch(() => {});
+  const confirmArchive = (itemId: string) => {
+    const handleArchive = () => archiveFridgeItem(itemId).catch(() => {});
     if (Platform.OS === "web") {
       if (typeof window !== "undefined" && window.confirm(t("fridge_list.delete_confirm"))) {
-        handleDelete();
+        handleArchive();
       }
       return;
     }
     Alert.alert(t("fridge_list.delete_title"), t("fridge_list.delete_message"), [
       { text: t("fridge_list.delete_cancel"), style: "cancel" },
-      { text: t("fridge_list.delete_button"), style: "destructive", onPress: handleDelete },
+      { text: t("fridge_list.delete_button"), style: "destructive", onPress: handleArchive },
     ]);
   };
 
@@ -109,6 +113,20 @@ export default function FridgeListScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>{t("fridge_list.title")}</Text>
             <Text style={styles.subtitle}>{t("fridge_list.subtitle")}</Text>
+            <View style={styles.inventoryToggle}>
+              <Pressable
+                onPress={() => setInventoryMode("active")}
+                style={[styles.inventoryButton, !isHistoryView && styles.inventoryButtonActive]}
+              >
+                <Text style={styles.inventoryButtonText}>{t("fridge_list.active")}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setInventoryMode("history")}
+                style={[styles.inventoryButton, isHistoryView && styles.inventoryButtonActive]}
+              >
+                <Text style={styles.inventoryButtonText}>{t("fridge_list.history")}</Text>
+              </Pressable>
+            </View>
             <Pressable
               onPress={() => setIsFilterOpen((value) => !value)}
               style={styles.filterToggle}
@@ -173,17 +191,47 @@ export default function FridgeListScreen() {
                 />
               </Pressable>
             </View>
-            <Pressable
-              onPress={() => router.push("/(app)/add-fridge-item")}
-              style={styles.addButton}
-            >
-              <Text style={styles.addButtonText}>{t("fridge_list.add_button")}</Text>
-            </Pressable>
+            {!isHistoryView ? (
+              <Pressable
+                onPress={() => router.push("/(app)/add-fridge-item")}
+                style={styles.addButton}
+              >
+                <Text style={styles.addButtonText}>{t("fridge_list.add_button")}</Text>
+              </Pressable>
+            ) : null}
           </View>
         }
         renderItem={({ item }) => (
           <View style={isGridView ? styles.gridItem : undefined}>
-            <FridgeCard item={item} compact={isGridView} onDelete={() => confirmDelete(item.id)} />
+            <FridgeCard
+              item={item}
+              compact={isGridView}
+              isHistory={isHistoryView}
+              onEdit={!isHistoryView ? () =>
+                router.push({
+                  pathname: "/(app)/edit-fridge-item",
+                  params: {
+                    id: item.id,
+                    name: item.name,
+                    description: item.description,
+                    quantity: String(item.quantity),
+                    quantityType: item.quantityType,
+                    expirationDate: item.expirationDate,
+                    calories: String(item.calories),
+                    imageUrl: item.imageUrl,
+                    imageSerialized: item.imageSerialized ?? "",
+                    tags: JSON.stringify(item.tags),
+                  },
+                })
+              : undefined}
+              onArchive={!isHistoryView ? () => confirmArchive(item.id) : undefined}
+              onRestore={isHistoryView ? () =>
+                router.push({
+                  pathname: "/(app)/restore-fridge-item",
+                  params: { id: item.id, name: item.name },
+                })
+              : undefined}
+            />
           </View>
         )}
         ListEmptyComponent={
@@ -193,6 +241,8 @@ export default function FridgeListScreen() {
                 ? t("fridge_list.empty_loading")
                 : tagFilters.length > 0
                 ? t("fridge_list.empty_filtered")
+                : isHistoryView
+                ? t("fridge_list.empty_history")
                 : t("fridge_list.empty")}
             </Text>
           </View>
@@ -245,6 +295,17 @@ const styles = StyleSheet.create({
   header: { gap: spacing.sm, marginBottom: spacing.lg },
   title: { color: colors.text, ...typography.h1 },
   subtitle: { color: colors.muted, ...typography.body },
+  inventoryToggle: { flexDirection: "row", gap: spacing.xs },
+  inventoryButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  inventoryButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  inventoryButtonText: { color: colors.text, ...typography.caption },
   gridRow: { gap: spacing.md },
   gridItem: { flex: 1, maxWidth: "50%" },
   separator: { height: spacing.md },

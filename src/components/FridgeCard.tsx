@@ -7,10 +7,20 @@ import { colors, radius, spacing, typography } from "../theme/tokens";
 type FridgeCardProps = {
   item: FridgeItem;
   compact?: boolean;
-  onDelete: () => void;
+  isHistory?: boolean;
+  onEdit?: () => void;
+  onArchive?: () => void;
+  onRestore?: () => void;
 };
 
-export function FridgeCard({ item, compact = false, onDelete }: FridgeCardProps) {
+export function FridgeCard({
+  item,
+  compact = false,
+  isHistory = false,
+  onEdit,
+  onArchive,
+  onRestore,
+}: FridgeCardProps) {
   const { t } = useI18n();
   const imageUri = item.imageSerialized || item.imageUrl;
 
@@ -25,13 +35,29 @@ export function FridgeCard({ item, compact = false, onDelete }: FridgeCardProps)
         <Text style={styles.meta}>
           {t("fridge_card.quantity", { quantity: item.quantity, type: item.quantityType })}
         </Text>
-        <Text style={styles.meta}>
-          {t("fridge_card.expiration", { date: item.expirationDate })}
-        </Text>
+        {!isHistory ? (
+          <Text style={styles.meta}>
+            {t("fridge_card.expiration", { date: item.expirationDate })}
+          </Text>
+        ) : null}
         <Text style={styles.meta}>{t("fridge_card.calories", { calories: item.calories })}</Text>
-        <Pressable onPress={onDelete} style={styles.deleteButton}>
-          <Text style={styles.deleteText}>{t("card.delete")}</Text>
-        </Pressable>
+        <View style={styles.actions}>
+          {onEdit ? (
+            <Pressable onPress={onEdit} style={styles.editButton}>
+              <Text style={styles.editText}>{t("card.edit")}</Text>
+            </Pressable>
+          ) : null}
+          {onArchive ? (
+            <Pressable onPress={onArchive} style={styles.deleteButton}>
+              <Text style={styles.deleteText}>{t("fridge_card.archive")}</Text>
+            </Pressable>
+          ) : null}
+          {onRestore ? (
+            <Pressable onPress={onRestore} style={styles.restoreButton}>
+              <Text style={styles.restoreText}>{t("fridge_card.restore")}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -54,9 +80,18 @@ const styles = StyleSheet.create({
   description: { color: colors.muted, ...typography.body },
   compactText: { ...typography.caption },
   meta: { color: colors.muted, ...typography.caption },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: spacing.xs },
+  editButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  editText: { color: colors.text, ...typography.caption },
   deleteButton: {
     alignSelf: "flex-start",
-    marginTop: spacing.xs,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
@@ -65,4 +100,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerSurface,
   },
   deleteText: { color: colors.danger, ...typography.caption },
+  restoreButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.successSurface,
+  },
+  restoreText: { color: colors.accent, ...typography.caption },
 });

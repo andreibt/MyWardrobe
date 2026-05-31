@@ -87,7 +87,12 @@
         "app/(app)/(wardrobe)/assistant.tsx",
         "app/(app)/(fridge)/fridge-list.tsx",
         "app/(app)/add-fridge-item.tsx",
+        "app/(app)/edit-fridge-item.tsx",
+        "app/(app)/restore-fridge-item.tsx",
         "app/(app)/(fridge)/recipes.tsx",
+        "app/(app)/add-recipe.tsx",
+        "app/(app)/edit-recipe.tsx",
+        "app/(app)/recipe-details.tsx",
         "app/(app)/(fridge)/assistant.tsx",
         "app/_layout.tsx (root provider + auth gate)"
       ],

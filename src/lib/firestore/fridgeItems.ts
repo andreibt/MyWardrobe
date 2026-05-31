@@ -1,11 +1,11 @@
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
   onSnapshot,
   query,
   serverTimestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 
@@ -25,11 +25,13 @@ export type FridgeItem = {
   imageUrl: string;
   imageSerialized?: string;
   tags: string[];
+  isHistory: boolean;
   ownerId: string;
   createdAt?: Date | null;
 };
 
-type NewFridgeItem = Omit<FridgeItem, "id" | "ownerId" | "createdAt">;
+type NewFridgeItem = Omit<FridgeItem, "id" | "ownerId" | "createdAt" | "isHistory">;
+type UpdateFridgeItem = Partial<NewFridgeItem>;
 
 const fridgeCollection = collection(db, "fridgeItems");
 
@@ -58,6 +60,7 @@ export function subscribeToFridgeItems(
         imageSerialized:
           typeof data.imageSerialized === "string" ? data.imageSerialized : "",
         tags: Array.isArray(data.tags) ? data.tags : [],
+        isHistory: data.isHistory === true,
         ownerId: data.ownerId ?? ownerId,
         createdAt: data.createdAt?.toDate?.() ?? null,
       };
@@ -77,10 +80,30 @@ export async function addFridgeItem(ownerId: string, data: NewFridgeItem) {
   await addDoc(fridgeCollection, {
     ...data,
     ownerId,
+    isHistory: false,
     createdAt: serverTimestamp(),
   });
 }
 
-export async function deleteFridgeItem(itemId: string) {
-  await deleteDoc(doc(db, "fridgeItems", itemId));
+export async function updateFridgeItem(itemId: string, data: UpdateFridgeItem) {
+  await updateDoc(doc(db, "fridgeItems", itemId), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function archiveFridgeItem(itemId: string) {
+  await updateDoc(doc(db, "fridgeItems", itemId), {
+    isHistory: true,
+    expirationDate: "",
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function restoreFridgeItem(itemId: string, expirationDate: string) {
+  await updateDoc(doc(db, "fridgeItems", itemId), {
+    isHistory: false,
+    expirationDate,
+    updatedAt: serverTimestamp(),
+  });
 }

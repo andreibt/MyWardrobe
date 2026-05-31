@@ -61,5 +61,15 @@ service cloud.firestore {
         && request.query != null
         && request.query.where('ownerId', '==', request.auth.uid);
     }
+
+    match /recipes/{recipeId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
   }
 }
