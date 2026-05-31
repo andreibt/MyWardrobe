@@ -71,7 +71,7 @@ export default function RecipeDetailsScreen() {
         <Text style={styles.groupTitle}>{t("recipes.ingredients_need_to_buy")}</Text>
         <RecipeIngredientZone ingredients={needToBuyIngredients} hideLabel />
       </View>
-      <Pressable onPress={() => router.back()} style={styles.backButton}>
+      <Pressable onPress={() => router.replace("/(app)/(fridge)/recipes")} style={styles.backButton}>
         <Text style={styles.backText}>{t("recipes.back")}</Text>
       </Pressable>
     </ScrollView>

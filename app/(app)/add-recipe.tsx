@@ -1,11 +1,11 @@
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { RecipeForm } from "../../src/components/RecipeForm";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { addRecipe } from "../../src/lib/firestore/recipes";
 import { useAuth } from "../../src/providers/AuthProvider";
-import { colors, spacing, typography } from "../../src/theme/tokens";
+import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
 export default function AddRecipeScreen() {
   const { t } = useI18n();
@@ -14,7 +14,15 @@ export default function AddRecipeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t("recipes.add_title")}</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{t("recipes.add_title")}</Text>
+        <Pressable
+          onPress={() => router.replace("/(app)/(fridge)/recipes")}
+          style={styles.closeButton}
+        >
+          <Text style={styles.closeText}>{t("card.close")}</Text>
+        </Pressable>
+      </View>
       <RecipeForm
         ownerId={user?.id ?? null}
         submitLabel={t("recipes.save")}
@@ -34,5 +42,8 @@ export default function AddRecipeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  title: { padding: spacing.lg, paddingBottom: 0, color: colors.text, ...typography.h1 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, padding: spacing.lg, paddingBottom: 0 },
+  title: { color: colors.text, ...typography.h1 },
+  closeButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.pill, backgroundColor: colors.card },
+  closeText: { color: colors.primary, ...typography.body },
 });

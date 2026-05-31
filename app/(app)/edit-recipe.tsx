@@ -1,11 +1,11 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { RecipeForm, type RecipeFormValue } from "../../src/components/RecipeForm";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { updateRecipe, type Recipe } from "../../src/lib/firestore/recipes";
 import { useAuth } from "../../src/providers/AuthProvider";
-import { colors, spacing, typography } from "../../src/theme/tokens";
+import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
 const parseRecipe = (value: string | string[] | undefined): Recipe | null => {
   try {
@@ -40,7 +40,15 @@ export default function EditRecipeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t("recipes.edit_title")}</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{t("recipes.edit_title")}</Text>
+        <Pressable
+          onPress={() => router.replace("/(app)/(fridge)/recipes")}
+          style={styles.closeButton}
+        >
+          <Text style={styles.closeText}>{t("card.close")}</Text>
+        </Pressable>
+      </View>
       <RecipeForm
         ownerId={user?.id ?? null}
         initialValue={initialValue}
@@ -60,5 +68,8 @@ export default function EditRecipeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  title: { padding: spacing.lg, paddingBottom: 0, color: colors.text, ...typography.h1 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, padding: spacing.lg, paddingBottom: 0 },
+  title: { color: colors.text, ...typography.h1 },
+  closeButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.pill, backgroundColor: colors.card },
+  closeText: { color: colors.primary, ...typography.body },
 });
