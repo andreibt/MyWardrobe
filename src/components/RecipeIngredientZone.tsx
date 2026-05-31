@@ -8,12 +8,14 @@ import { colors, radius, spacing, typography } from "../theme/tokens";
 type RecipeIngredientZoneProps = {
   ingredients: RecipeIngredient[];
   editable?: boolean;
+  hideLabel?: boolean;
   onRemove?: (fridgeItemId: string) => void;
 };
 
 export function RecipeIngredientZone({
   ingredients,
   editable = false,
+  hideLabel = false,
   onRemove,
 }: RecipeIngredientZoneProps) {
   const { t } = useI18n();
@@ -21,7 +23,7 @@ export function RecipeIngredientZone({
 
   return (
     <View style={styles.section}>
-      <Text style={styles.label}>{t("recipes.ingredients")}</Text>
+      {!hideLabel ? <Text style={styles.label}>{t("recipes.ingredients")}</Text> : null}
       {ingredients.length === 0 ? (
         <Text style={styles.empty}>{t("recipes.ingredients_empty")}</Text>
       ) : (
@@ -58,9 +60,6 @@ export function RecipeIngredientZone({
             </Text>
             <Text style={styles.modalText}>
               {t("recipes.ingredient_calories", { calories: selected?.calories ?? 0 })}
-            </Text>
-            <Text style={styles.modalText}>
-              {selected?.isHistory ? t("recipes.ingredient_history") : t("recipes.ingredient_current")}
             </Text>
             <Pressable onPress={() => setSelected(null)} style={styles.closeButton}>
               <Text style={styles.closeText}>{t("card.close")}</Text>

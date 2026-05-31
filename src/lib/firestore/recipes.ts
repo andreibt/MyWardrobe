@@ -19,7 +19,6 @@ export type RecipeIngredient = {
   quantityType: QuantityType;
   description: string;
   calories: number;
-  isHistory: boolean;
 };
 
 export type Recipe = {
@@ -36,6 +35,15 @@ type NewRecipe = Omit<Recipe, "id" | "ownerId">;
 type UpdateRecipe = Partial<NewRecipe>;
 
 const recipesCollection = collection(db, "recipes");
+const sanitizeIngredients = (ingredients: RecipeIngredient[]) =>
+  ingredients.map(({ fridgeItemId, name, quantity, quantityType, description, calories }) => ({
+    fridgeItemId,
+    name,
+    quantity,
+    quantityType,
+    description,
+    calories,
+  }));
 
 export function subscribeToRecipes(ownerId: string, onChange: (recipes: Recipe[]) => void) {
   const recipesQuery = query(recipesCollection, where("ownerId", "==", ownerId));
@@ -50,7 +58,9 @@ export function subscribeToRecipes(ownerId: string, onChange: (recipes: Recipe[]
           instructions: String(data.instructions ?? ""),
           calories: Number(data.calories ?? 0),
           portions: Number(data.portions ?? 0),
-          ingredients: Array.isArray(data.ingredients) ? data.ingredients : [],
+          ingredients: Array.isArray(data.ingredients)
+            ? sanitizeIngredients(data.ingredients)
+            : [],
           ownerId: data.ownerId ?? ownerId,
         };
       })
@@ -63,6 +73,7 @@ export function subscribeToRecipes(ownerId: string, onChange: (recipes: Recipe[]
 export async function addRecipe(ownerId: string, data: NewRecipe) {
   await addDoc(recipesCollection, {
     ...data,
+    ingredients: sanitizeIngredients(data.ingredients),
     ownerId,
     createdAt: serverTimestamp(),
   });
@@ -71,6 +82,7 @@ export async function addRecipe(ownerId: string, data: NewRecipe) {
 export async function updateRecipe(recipeId: string, data: UpdateRecipe) {
   await updateDoc(doc(db, "recipes", recipeId), {
     ...data,
+    ...(data.ingredients ? { ingredients: sanitizeIngredients(data.ingredients) } : {}),
     updatedAt: serverTimestamp(),
   });
 }

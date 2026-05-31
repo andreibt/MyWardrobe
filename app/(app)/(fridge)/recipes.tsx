@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
+import { subscribeToFridgeItems, type FridgeItem } from "../../../src/lib/firestore/fridgeItems";
 import { subscribeToRecipes, type Recipe } from "../../../src/lib/firestore/recipes";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
@@ -14,6 +15,7 @@ export default function RecipesScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -24,6 +26,18 @@ export default function RecipesScreen() {
     return subscribeToRecipes(user.id, setRecipes);
   }, [user]);
 
+  useEffect(() => {
+    if (!user) {
+      setFridgeItems([]);
+      return;
+    }
+    return subscribeToFridgeItems(user.id, setFridgeItems);
+  }, [user]);
+
+  const currentFridgeItemIds = useMemo(
+    () => new Set(fridgeItems.filter((item) => !item.isHistory).map((item) => item.id)),
+    [fridgeItems]
+  );
   const totalPages = Math.max(1, Math.ceil(recipes.length / PAGE_SIZE));
   const pageRecipes = useMemo(
     () => recipes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -60,6 +74,30 @@ export default function RecipesScreen() {
               <Text style={styles.recipeName}>{item.name}</Text>
               <Text style={styles.meta}>{t("recipes.calories_value", { calories: item.calories })}</Text>
               <Text style={styles.meta}>{t("recipes.portions_value", { portions: item.portions })}</Text>
+              <View style={styles.ingredientGroup}>
+                <Text style={styles.groupLabel}>{t("recipes.ingredients_in_fridge")}</Text>
+                <View style={styles.chips}>
+                  {item.ingredients
+                    .filter((ingredient) => currentFridgeItemIds.has(ingredient.fridgeItemId))
+                    .map((ingredient) => (
+                      <Text key={ingredient.fridgeItemId} style={styles.availableChip}>
+                        {ingredient.name}
+                      </Text>
+                    ))}
+                </View>
+              </View>
+              <View style={styles.ingredientGroup}>
+                <Text style={styles.groupLabel}>{t("recipes.ingredients_need_to_buy")}</Text>
+                <View style={styles.chips}>
+                  {item.ingredients
+                    .filter((ingredient) => !currentFridgeItemIds.has(ingredient.fridgeItemId))
+                    .map((ingredient) => (
+                      <Text key={ingredient.fridgeItemId} style={styles.missingChip}>
+                        {ingredient.name}
+                      </Text>
+                    ))}
+                </View>
+              </View>
             </View>
             <Pressable
               onPress={(event) => {
@@ -106,6 +144,11 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1, gap: spacing.xs },
   recipeName: { color: colors.text, ...typography.h2 },
   meta: { color: colors.muted, ...typography.caption },
+  ingredientGroup: { gap: spacing.xs, marginTop: spacing.xs },
+  groupLabel: { color: colors.text, ...typography.caption, textTransform: "uppercase" },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+  availableChip: { paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.pill, color: colors.accent, backgroundColor: colors.successSurface, ...typography.caption },
+  missingChip: { paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.pill, color: colors.danger, backgroundColor: colors.dangerSurface, ...typography.caption },
   editButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.pill, backgroundColor: colors.card },
   editText: { color: colors.primary, ...typography.body },
   pagination: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
