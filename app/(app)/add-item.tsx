@@ -157,7 +157,7 @@ export default function AddItemScreen() {
       tags,
       ...(imageSerialized ? { imageSerialized } : {}),
     });
-    router.replace("/(app)/(tabs)/home");
+    router.replace("/(app)/(tabs)/wardrobe-list");
   };
 
   const handleLoadDriveFiles = async () => {

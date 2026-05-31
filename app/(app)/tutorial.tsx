@@ -27,7 +27,7 @@ export default function TutorialScreen() {
   const lastIndex = SLIDE_KEYS.length - 1;
 
   const handleSkip = () => {
-    router.replace("/(app)/(tabs)/home");
+    router.replace("/(app)/(tabs)/wardrobe-list");
   };
 
   const handleNext = () => {

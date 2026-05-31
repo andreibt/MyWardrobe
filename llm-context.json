@@ -80,7 +80,7 @@
         "app/(auth)/login.tsx",
         "app/(auth)/register.tsx",
         "app/(app)/_layout.tsx (protected area)",
-        "app/(app)/(tabs)/home.tsx",
+        "app/(app)/(tabs)/wardrobe-list.tsx",
         "app/(app)/(tabs)/settings.tsx",
         "app/_layout.tsx (root provider + auth gate)"
       ],

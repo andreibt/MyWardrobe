@@ -27,9 +27,9 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="wardrobe-list"
         options={{
-          title: t("tabs.home"),
+          title: t("tabs.wardrobe_list"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="wardrobe-outline" color={color} size={size} />
           ),

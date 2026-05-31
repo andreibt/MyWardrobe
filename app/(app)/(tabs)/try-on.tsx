@@ -322,7 +322,7 @@ export default function TryOnScreen() {
         {items.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>
-              {isLoading ? t("home.empty_loading") : t("try_on.empty")}
+              {isLoading ? t("wardrobe_list.empty_loading") : t("try_on.empty")}
             </Text>
             <Text style={styles.emptySubtitle}>{t("try_on.empty_subtitle")}</Text>
           </View>

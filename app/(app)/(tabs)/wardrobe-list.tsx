@@ -22,7 +22,7 @@ import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
 
-export default function HomeScreen() {
+export default function WardrobeListScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const { t } = useI18n();
@@ -112,19 +112,19 @@ export default function HomeScreen() {
     };
 
     if (Platform.OS === "web") {
-      if (typeof window !== "undefined" && window.confirm(t("home.delete_confirm"))) {
+      if (typeof window !== "undefined" && window.confirm(t("wardrobe_list.delete_confirm"))) {
         handleDelete();
       }
       return;
     }
 
     Alert.alert(
-      t("home.delete_title"),
-      t("home.delete_message"),
+      t("wardrobe_list.delete_title"),
+      t("wardrobe_list.delete_message"),
       [
-        { text: t("home.delete_cancel"), style: "cancel" },
+        { text: t("wardrobe_list.delete_cancel"), style: "cancel" },
         {
-          text: t("home.delete_confirm_button"),
+          text: t("wardrobe_list.delete_confirm_button"),
           style: "destructive",
           onPress: handleDelete,
         },
@@ -158,11 +158,11 @@ export default function HomeScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>{t("home.title")}</Text>
-            <Text style={styles.subtitle}>{t("home.subtitle")}</Text>
+            <Text style={styles.title}>{t("wardrobe_list.title")}</Text>
+            <Text style={styles.subtitle}>{t("wardrobe_list.subtitle")}</Text>
             {activeConfig ? (
               <View style={styles.configBadge}>
-                <Text style={styles.configLabel}>{t("home.active_config")}</Text>
+                <Text style={styles.configLabel}>{t("wardrobe_list.active_config")}</Text>
                 <Text style={styles.configName}>{activeConfig}</Text>
               </View>
             ) : null}
@@ -170,17 +170,17 @@ export default function HomeScreen() {
               style={styles.filterToggle}
               onPress={() => setIsFilterOpen((value) => !value)}
             >
-              <Text style={styles.filterToggleText}>{t("home.filter_title")}</Text>
+              <Text style={styles.filterToggleText}>{t("wardrobe_list.filter_title")}</Text>
               <Text style={styles.filterToggleHint}>
                 {tagFilters.length > 0
-                  ? t("home.filter_count", { count: tagFilters.length })
-                  : t("home.filter_hint")}
+                  ? t("wardrobe_list.filter_count", { count: tagFilters.length })
+                  : t("wardrobe_list.filter_hint")}
               </Text>
             </Pressable>
             {isFilterOpen ? (
               <View style={styles.filterPanel}>
                 {tags.length === 0 ? (
-                  <Text style={styles.filterEmpty}>{t("home.filter_empty")}</Text>
+                  <Text style={styles.filterEmpty}>{t("wardrobe_list.filter_empty")}</Text>
                 ) : (
                   <View style={styles.filterTagList}>
                     {tags.map((tag) => {
@@ -213,13 +213,13 @@ export default function HomeScreen() {
                     onPress={() => setTagFilters([])}
                     style={({ pressed }) => [styles.clearButton, pressed && styles.buttonPressed]}
                   >
-                    <Text style={styles.clearButtonText}>{t("home.filter_clear")}</Text>
+                    <Text style={styles.clearButtonText}>{t("wardrobe_list.filter_clear")}</Text>
                   </Pressable>
                 ) : null}
               </View>
             ) : null}
             <Pressable style={styles.addButton} onPress={() => router.push("/(app)/add-item")}>
-              <Text style={styles.addButtonText}>{t("home.add_button")}</Text>
+              <Text style={styles.addButtonText}>{t("wardrobe_list.add_button")}</Text>
             </Pressable>
           </View>
         }
@@ -248,13 +248,13 @@ export default function HomeScreen() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>
               {isLoading
-                ? t("home.empty_loading")
+                ? t("wardrobe_list.empty_loading")
                 : tagFilters.length > 0
-                ? t("home.empty_filtered")
-                : t("home.empty")}
+                ? t("wardrobe_list.empty_filtered")
+                : t("wardrobe_list.empty")}
             </Text>
             <Text style={styles.emptySubtitle}>
-              {tagFilters.length > 0 ? t("home.empty_filtered_subtitle") : t("home.empty_subtitle")}
+              {tagFilters.length > 0 ? t("wardrobe_list.empty_filtered_subtitle") : t("wardrobe_list.empty_subtitle")}
             </Text>
           </View>
         }
@@ -262,7 +262,7 @@ export default function HomeScreen() {
           filteredItems.length > 0 ? (
             <View style={styles.pagination}>
               <View style={styles.pageSizeSection}>
-                <Text style={styles.paginationLabel}>{t("home.page_size")}</Text>
+                <Text style={styles.paginationLabel}>{t("wardrobe_list.page_size")}</Text>
                 <View style={styles.pageSizeOptions}>
                   {PAGE_SIZE_OPTIONS.map((option) => {
                     const isActive = pageSize === option;
@@ -300,10 +300,10 @@ export default function HomeScreen() {
                     pressed && styles.buttonPressed,
                   ]}
                 >
-                  <Text style={styles.pageButtonText}>{t("home.page_previous")}</Text>
+                  <Text style={styles.pageButtonText}>{t("wardrobe_list.page_previous")}</Text>
                 </Pressable>
                 <Text style={styles.pageStatus}>
-                  {t("home.page_status", { page: currentPage, total: totalPages })}
+                  {t("wardrobe_list.page_status", { page: currentPage, total: totalPages })}
                 </Text>
                 <Pressable
                   disabled={currentPage === totalPages}
@@ -314,7 +314,7 @@ export default function HomeScreen() {
                     pressed && styles.buttonPressed,
                   ]}
                 >
-                  <Text style={styles.pageButtonText}>{t("home.page_next")}</Text>
+                  <Text style={styles.pageButtonText}>{t("wardrobe_list.page_next")}</Text>
                 </Pressable>
               </View>
             </View>
