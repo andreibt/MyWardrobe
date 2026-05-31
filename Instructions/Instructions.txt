@@ -1,2 +1,2 @@
-Add a new Tab Assistant. The tab will be a chat text where the user will comunicate with a chat agent. The Agent is ollama with gemma4 model installed locally we use http://localhost:11434/api/generate for the request. Make the call to the agent easy 
-to change. The request body will have model and prompt attribute, where prompt is what the user enters.
+On the the tryOn tab create a button Suggestion. Send a prompt to the assistent that contains the full list of the wardrobe, but as an array with json items. An item looks like this {ownerId, color, tags}.
+The prompt will be "itemsJsonList using this list select the best outfit for today. Today is a summer warm day. Return a list of OwnerId". Using the Ownerids returned from the prompt create a TryOn Config. 
