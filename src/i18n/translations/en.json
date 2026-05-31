@@ -7,6 +7,8 @@
   "wardrobe_list.filter_count": "{{count}} selected",
   "wardrobe_list.filter_clear": "Clear filters",
   "wardrobe_list.filter_empty": "Create tags to use filters.",
+  "wardrobe_list.view_grid": "Grid view",
+  "wardrobe_list.view_list": "List view",
   "wardrobe_list.active_config": "Active try-on",
   "wardrobe_list.empty_loading": "Loading items...",
   "wardrobe_list.empty": "No wardrobe items yet.",

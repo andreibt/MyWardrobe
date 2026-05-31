@@ -7,6 +7,8 @@
   "wardrobe_list.filter_count": "{{count}} selectate",
   "wardrobe_list.filter_clear": "Șterge filtrele",
   "wardrobe_list.filter_empty": "Creează etichete pentru a folosi filtrele.",
+  "wardrobe_list.view_grid": "Vizualizare grilă",
+  "wardrobe_list.view_list": "Vizualizare listă",
   "wardrobe_list.active_config": "Probă activă",
   "wardrobe_list.empty_loading": "Se încarcă articolele...",
   "wardrobe_list.empty": "Nu există articole în garderobă încă.",

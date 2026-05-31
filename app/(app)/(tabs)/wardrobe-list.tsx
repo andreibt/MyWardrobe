@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -21,6 +22,7 @@ import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
 import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
+type ViewMode = "list" | "grid";
 
 export default function WardrobeListScreen() {
   const { user } = useAuth();
@@ -35,6 +37,8 @@ export default function WardrobeListScreen() {
   const [tryOnItems, setTryOnItems] = useState<TryOnItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const isGridView = viewMode === "grid";
 
   useEffect(() => {
     if (!user) {
@@ -147,9 +151,12 @@ export default function WardrobeListScreen() {
   return (
     <View style={styles.container}>
       <FlatList
+        key={viewMode}
         data={paginatedItems}
+        numColumns={isGridView ? 2 : 1}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        columnWrapperStyle={isGridView ? styles.gridRow : undefined}
         initialNumToRender={pageSize}
         maxToRenderPerBatch={pageSize}
         updateCellsBatchingPeriod={50}
@@ -218,31 +225,70 @@ export default function WardrobeListScreen() {
                 ) : null}
               </View>
             ) : null}
+            <View style={styles.viewToggle}>
+              <Pressable
+                onPress={() => setViewMode("grid")}
+                style={({ pressed }) => [
+                  styles.viewToggleButton,
+                  isGridView && styles.viewToggleButtonActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("wardrobe_list.view_grid")}
+                accessibilityState={{ selected: isGridView }}
+              >
+                <MaterialCommunityIcons
+                  name="view-grid-outline"
+                  color={isGridView ? colors.background : colors.muted}
+                  size={22}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => setViewMode("list")}
+                style={({ pressed }) => [
+                  styles.viewToggleButton,
+                  !isGridView && styles.viewToggleButtonActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("wardrobe_list.view_list")}
+                accessibilityState={{ selected: !isGridView }}
+              >
+                <MaterialCommunityIcons
+                  name="view-list-outline"
+                  color={!isGridView ? colors.background : colors.muted}
+                  size={22}
+                />
+              </Pressable>
+            </View>
             <Pressable style={styles.addButton} onPress={() => router.push("/(app)/add-item")}>
               <Text style={styles.addButtonText}>{t("wardrobe_list.add_button")}</Text>
             </Pressable>
           </View>
         }
         renderItem={({ item }) => (
-          <WardrobeCard
-            item={item}
-            onEdit={() =>
-              router.push({
-                pathname: "/(app)/edit-item",
-                params: {
-                  id: item.id,
-                  title: item.title,
-                  description: item.description,
-                  imageUrl: item.imageUrl,
-                  color: item.color,
-                  tags: JSON.stringify(item.tags ?? []),
-                },
-              })
-            }
-            onTryOn={() => handleTryOn(item)}
-            isInTryOn={tryOnByWardrobeId.has(item.id)}
-            onDelete={() => confirmDelete(item.id)}
-          />
+          <View style={isGridView ? styles.gridItem : undefined}>
+            <WardrobeCard
+              item={item}
+              compact={isGridView}
+              onEdit={() =>
+                router.push({
+                  pathname: "/(app)/edit-item",
+                  params: {
+                    id: item.id,
+                    title: item.title,
+                    description: item.description,
+                    imageUrl: item.imageUrl,
+                    color: item.color,
+                    tags: JSON.stringify(item.tags ?? []),
+                  },
+                })
+              }
+              onTryOn={() => handleTryOn(item)}
+              isInTryOn={tryOnByWardrobeId.has(item.id)}
+              onDelete={() => confirmDelete(item.id)}
+            />
+          </View>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -337,6 +383,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
+  gridRow: {
+    gap: spacing.md,
+  },
+  gridItem: {
+    flex: 1,
+    maxWidth: "50%",
+  },
   title: {
     color: colors.text,
     ...typography.h1,
@@ -428,6 +481,22 @@ const styles = StyleSheet.create({
     ...typography.caption,
     textTransform: "uppercase",
     letterSpacing: 0.8,
+  },
+  viewToggle: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: spacing.xs,
+  },
+  viewToggleButton: {
+    padding: spacing.xs,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  viewToggleButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   addButton: {
     alignSelf: "flex-start",

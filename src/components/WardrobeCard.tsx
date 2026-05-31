@@ -7,6 +7,7 @@ import { colors, radius, spacing, typography } from "../theme/tokens";
 
 type WardrobeCardProps = {
   item: WardrobeItem;
+  compact?: boolean;
   onEdit?: () => void;
   onTryOn?: () => void;
   isInTryOn?: boolean;
@@ -15,6 +16,7 @@ type WardrobeCardProps = {
 
 export function WardrobeCard({
   item,
+  compact = false,
   onEdit,
   onTryOn,
   isInTryOn,
@@ -32,7 +34,7 @@ export function WardrobeCard({
         accessibilityRole="imagebutton"
         accessibilityLabel={item.title}
       >
-        <Image source={{ uri: imageUri }} style={styles.image} />
+        <Image source={{ uri: imageUri }} style={[styles.image, compact && styles.compactImage]} />
       </Pressable>
       <Modal
         visible={isImagePreviewOpen}
@@ -64,26 +66,45 @@ export function WardrobeCard({
           </View>
         </View>
       </Modal>
-      <View style={styles.content}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description}>{item.description}</Text>
+      <View style={[styles.content, compact && styles.compactContent]}>
+        <Text style={[styles.title, compact && styles.compactTitle]}>{item.title}</Text>
+        <Text style={[styles.description, compact && styles.compactText]}>
+          {item.description}
+        </Text>
         <Text style={styles.meta}>{t("card.color", { color: item.color })}</Text>
         {(onEdit || onTryOn || onDelete) ? (
-          <View style={styles.actions}>
+          <View style={[styles.actions, compact && styles.compactActions]}>
             {onEdit ? (
-              <Pressable onPress={onEdit} style={styles.actionButton}>
+              <Pressable
+                onPress={onEdit}
+                style={[styles.actionButton, compact && styles.compactActionButton]}
+              >
                 <Text style={styles.actionText}>{t("card.edit")}</Text>
               </Pressable>
             ) : null}
             {onTryOn ? (
-              <Pressable onPress={onTryOn} style={[styles.actionButton, styles.tryOnButton]}>
+              <Pressable
+                onPress={onTryOn}
+                style={[
+                  styles.actionButton,
+                  styles.tryOnButton,
+                  compact && styles.compactActionButton,
+                ]}
+              >
                 <Text style={styles.tryOnText}>
                   {isInTryOn ? t("card.try_on_remove") : t("card.try_on")}
                 </Text>
               </Pressable>
             ) : null}
             {onDelete ? (
-              <Pressable onPress={onDelete} style={[styles.actionButton, styles.deleteButton]}>
+              <Pressable
+                onPress={onDelete}
+                style={[
+                  styles.actionButton,
+                  styles.deleteButton,
+                  compact && styles.compactActionButton,
+                ]}
+              >
                 <Text style={styles.deleteText}>{t("card.delete")}</Text>
               </Pressable>
             ) : null}
@@ -110,6 +131,9 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: 160,
+  },
+  compactImage: {
+    height: 112,
   },
   imageButton: {
     backgroundColor: colors.card,
@@ -152,13 +176,23 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs,
   },
+  compactContent: {
+    padding: spacing.sm,
+  },
   title: {
     color: colors.text,
     ...typography.h2,
   },
+  compactTitle: {
+    ...typography.body,
+    fontWeight: "600",
+  },
   description: {
     color: colors.muted,
     ...typography.body,
+  },
+  compactText: {
+    ...typography.caption,
   },
   meta: {
     color: colors.muted,
@@ -169,6 +203,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm,
   },
+  compactActions: {
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
   actionButton: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -176,6 +214,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  compactActionButton: {
+    paddingHorizontal: spacing.sm,
   },
   actionText: {
     color: colors.text,
