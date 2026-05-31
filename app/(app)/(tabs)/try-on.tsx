@@ -17,7 +17,9 @@ import DraggableFlatList, {
 } from "react-native-draggable-flatlist";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
+import { sendAssistantPrompt } from "../../../src/lib/assistant";
 import {
+  addTryOnItem,
   deleteTryOnItem,
   deleteTryOnItemsByConfiguration,
   subscribeToTryOnItems,
@@ -32,6 +34,10 @@ import {
   subscribeToTryOnConfigs,
   type TryOnConfig,
 } from "../../../src/lib/firestore/tryOnConfigs";
+import {
+  subscribeToWardrobeItems,
+  type WardrobeItem,
+} from "../../../src/lib/firestore/wardrobeItems";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
 import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
@@ -51,8 +57,11 @@ export default function TryOnScreen() {
   const { activeConfig, setActiveConfig } = useTryOnConfig();
   const [items, setItems] = useState<TryOnItem[]>([]);
   const [configs, setConfigs] = useState<TryOnConfig[]>([]);
+  const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [configName, setConfigName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestionError, setSuggestionError] = useState("");
   const { width } = useWindowDimensions();
   const numColumns = width >= 900 ? 3 : 2;
   const tileSize = useMemo(
@@ -89,6 +98,15 @@ export default function TryOnScreen() {
     }
 
     return subscribeToTryOnConfigs(user.id, setConfigs);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setWardrobeItems([]);
+      return;
+    }
+
+    return subscribeToWardrobeItems(user.id, setWardrobeItems);
   }, [user]);
 
   const layerItems = useMemo(() => {
@@ -185,6 +203,50 @@ export default function TryOnScreen() {
     }
   };
 
+  const handleSuggestion = async () => {
+    if (!user || wardrobeItems.length === 0 || isSuggesting) {
+      return;
+    }
+
+    setIsSuggesting(true);
+    setSuggestionError("");
+
+    try {
+      const itemsJsonList = JSON.stringify(
+        wardrobeItems.map((item) => ({
+          ownerId: item.id,
+          color: item.color,
+          tags: item.tags,
+        }))
+      );
+      const prompt = `${itemsJsonList} using this list select the best outfit for today. Today is a summer warm day. Return a list of OwnerId`;
+      const assistantResponse = await sendAssistantPrompt(prompt);
+      const suggestedIds = parseSuggestedOwnerIds(
+        assistantResponse,
+        wardrobeItems.map((item) => item.id)
+      );
+      const suggestedItems = suggestedIds
+        .map((id) => wardrobeItems.find((item) => item.id === id))
+        .filter((item): item is WardrobeItem => Boolean(item));
+
+      if (suggestedItems.length === 0) {
+        setSuggestionError(t("try_on.suggestion_empty"));
+        return;
+      }
+
+      const suggestedConfigName = createSuggestionConfigName();
+      await addTryOnConfig(user.id, suggestedConfigName);
+      await Promise.all(
+        suggestedItems.map((item) => addTryOnItem(user.id, item, suggestedConfigName))
+      );
+      setActiveConfig(suggestedConfigName);
+    } catch {
+      setSuggestionError(t("try_on.suggestion_error"));
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const renderItem =
     (layer: TryOnItem["layer"]) =>
     ({ item, drag, isActive }: RenderItemParams<TryOnItem>) => {
@@ -235,6 +297,22 @@ export default function TryOnScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>{t("try_on.title")}</Text>
         <Text style={styles.subtitle}>{t("try_on.subtitle")}</Text>
+        <Pressable
+          onPress={handleSuggestion}
+          disabled={isSuggesting || wardrobeItems.length === 0}
+          style={({ pressed }) => [
+            styles.suggestionButton,
+            (isSuggesting || wardrobeItems.length === 0) && styles.suggestionButtonDisabled,
+            pressed && styles.cardPressed,
+          ]}
+        >
+          <Text style={styles.suggestionButtonText}>
+            {isSuggesting ? t("try_on.suggestion_loading") : t("try_on.suggestion_button")}
+          </Text>
+        </Pressable>
+        {suggestionError ? (
+          <Text style={styles.suggestionError}>{suggestionError}</Text>
+        ) : null}
       </View>
 
       <ScrollContainer
@@ -355,6 +433,27 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.muted,
     ...typography.body,
+  },
+  suggestionButton: {
+    alignSelf: "flex-start",
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
+  suggestionButtonDisabled: {
+    opacity: 0.6,
+  },
+  suggestionButtonText: {
+    color: colors.background,
+    ...typography.caption,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  suggestionError: {
+    color: colors.danger,
+    ...typography.caption,
   },
   layers: {
     paddingHorizontal: spacing.lg,
@@ -532,3 +631,57 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
 });
+
+function createSuggestionConfigName() {
+  const now = new Date();
+  const date = now.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+  const time = now.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `Suggestion ${date} ${time}`;
+}
+
+function parseSuggestedOwnerIds(response: string, validIds: string[]) {
+  const parsedIds = parseJsonOwnerIds(response);
+  if (parsedIds.length > 0) {
+    return parsedIds.filter((id) => validIds.includes(id));
+  }
+
+  return validIds.filter((id) => response.includes(id));
+}
+
+function parseJsonOwnerIds(response: string) {
+  const jsonMatch = response.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) {
+    return [];
+  }
+
+  try {
+    const value = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((entry) => {
+        if (typeof entry === "string") {
+          return entry;
+        }
+        if (entry && typeof entry === "object" && "ownerId" in entry) {
+          return String(entry.ownerId);
+        }
+        if (entry && typeof entry === "object" && "OwnerId" in entry) {
+          return String(entry.OwnerId);
+        }
+        return "";
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
