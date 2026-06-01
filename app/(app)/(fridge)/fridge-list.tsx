@@ -192,12 +192,20 @@ export default function FridgeListScreen() {
               </Pressable>
             </View>
             {!isHistoryView ? (
-              <Pressable
-                onPress={() => router.push("/(app)/add-fridge-item")}
-                style={styles.addButton}
-              >
-                <Text style={styles.addButtonText}>{t("fridge_list.add_button")}</Text>
-              </Pressable>
+              <View style={styles.addActions}>
+                <Pressable
+                  onPress={() => router.push("/(app)/add-fridge-item")}
+                  style={styles.addButton}
+                >
+                  <Text style={styles.addButtonText}>{t("fridge_list.add_button")}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push("/(app)/add-receipt")}
+                  style={styles.receiptButton}
+                >
+                  <Text style={styles.addButtonText}>{t("fridge_list.add_receipt")}</Text>
+                </Pressable>
+              </View>
             ) : null}
           </View>
         }
@@ -356,6 +364,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
     backgroundColor: colors.accent,
+  },
+  addActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  receiptButton: {
+    alignSelf: "flex-start",
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
   },
   addButtonText: { color: colors.background, ...typography.body },
   emptyState: { paddingVertical: spacing.xl },

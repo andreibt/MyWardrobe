@@ -87,6 +87,7 @@
         "app/(app)/(wardrobe)/assistant.tsx",
         "app/(app)/(fridge)/fridge-list.tsx",
         "app/(app)/add-fridge-item.tsx",
+        "app/(app)/add-receipt.tsx",
         "app/(app)/edit-fridge-item.tsx",
         "app/(app)/restore-fridge-item.tsx",
         "app/(app)/(fridge)/recipes.tsx",
