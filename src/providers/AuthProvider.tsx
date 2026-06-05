@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import {
+  createAccountWithEmail,
   signInWithEmail,
   signOut as signOutLib,
   subscribeToAuthChanges,
@@ -11,6 +12,7 @@ import type { AuthUser } from "../lib/auth";
 type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
+  createAccount: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -39,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const createAccount = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      await createAccountWithEmail(email, password);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const signOut = async () => {
     setIsLoading(true);
     try {
@@ -50,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, createAccount, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

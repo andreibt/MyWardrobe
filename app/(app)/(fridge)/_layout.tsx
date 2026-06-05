@@ -1,10 +1,10 @@
-import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import { colors } from "../../../src/theme/tokens";
 
-export default function TabsLayout() {
+export default function FridgeTabsLayout() {
   const { t } = useI18n();
 
   return (
@@ -27,9 +27,8 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="module-home"
         options={{
-          headerShown: false,
           title: t("tabs.home"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home-outline" color={color} size={size} />
@@ -37,7 +36,34 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="fridge-list"
+        options={{
+          title: t("tabs.fridge"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="fridge-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="recipes"
+        options={{
+          title: t("tabs.recipes"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="book-open-page-variant-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="assistant"
+        options={{
+          title: t("tabs.assistant"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="robot-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="module-settings"
         options={{
           title: t("tabs.settings"),
           tabBarIcon: ({ color, size }) => (

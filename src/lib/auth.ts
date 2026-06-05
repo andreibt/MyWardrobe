@@ -1,5 +1,6 @@
 import type { User } from "firebase/auth";
 import {
+  createUserWithEmailAndPassword,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -31,6 +32,10 @@ export function subscribeToAuthChanges(onChange: (user: AuthUser | null) => void
 
 export async function signInWithEmail(email: string, password: string): Promise<void> {
   await signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function createAccountWithEmail(email: string, password: string): Promise<void> {
+  await createUserWithEmailAndPassword(auth, email, password);
 }
 
 export async function signOut(): Promise<void> {

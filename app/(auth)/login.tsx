@@ -20,8 +20,8 @@ import { useAuth } from "../../src/providers/AuthProvider";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
 const loginSchema = z.object({
-  email: z.string().email("validation.email_invalid"),
-  password: z.string().min(6, "validation.password_min"),
+  email: z.string().min(1, "validation.email_required").email("validation.email_invalid"),
+  password: z.string().min(1, "validation.password_required").min(6, "validation.password_min"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -42,10 +42,30 @@ const getLoginErrorKey = (error: unknown) => {
   return "login.error_generic";
 };
 
+const getRegistrationErrorKey = (error: unknown) => {
+  if (typeof error !== "object" || error === null) {
+    return "register.error_generic";
+  }
+
+  const payload = error as { code?: string };
+  if (payload.code === "auth/email-already-in-use") {
+    return "register.error_email_in_use";
+  }
+  if (payload.code === "auth/invalid-email") {
+    return "validation.email_invalid";
+  }
+  if (payload.code === "auth/weak-password") {
+    return "validation.password_min";
+  }
+
+  return "register.error_generic";
+};
+
 export default function LoginScreen() {
-  const { signIn, isLoading } = useAuth();
+  const { createAccount, signIn, isLoading } = useAuth();
   const router = useRouter();
   const { t, language, setLanguage } = useI18n();
+  const [isRegistering, setIsRegistering] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const {
     control,
@@ -62,10 +82,14 @@ export default function LoginScreen() {
   const onSubmit = async (data: LoginForm) => {
     setLoginError(null);
     try {
-      await signIn(data.email, data.password);
+      if (isRegistering) {
+        await createAccount(data.email, data.password);
+      } else {
+        await signIn(data.email, data.password);
+      }
       router.replace("/(app)/tutorial");
     } catch (error) {
-      setLoginError(getLoginErrorKey(error));
+      setLoginError(isRegistering ? getRegistrationErrorKey(error) : getLoginErrorKey(error));
     }
   };
 
@@ -183,12 +207,32 @@ export default function LoginScreen() {
             {isLoading ? (
               <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text style={styles.buttonText}>{t("login.button")}</Text>
+              <Text style={styles.buttonText}>
+                {t(isRegistering ? "register.button" : "login.button")}
+              </Text>
             )}
+          </Pressable>
+          <Pressable
+            disabled={isLoading}
+            onPress={() => {
+              setLoginError(null);
+              setIsRegistering((current) => !current);
+            }}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+              isLoading && styles.buttonDisabled,
+            ]}
+          >
+            <Text style={styles.secondaryButtonText}>
+              {t(isRegistering ? "register.back_to_login" : "register.create_account")}
+            </Text>
           </Pressable>
         </View>
 
-        <Text style={styles.footer}>{t("login.footer")}</Text>
+        <Text style={styles.footer}>
+          {t(isRegistering ? "register.footer" : "login.footer")}
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -290,6 +334,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.background,
     ...typography.h2,
+  },
+  secondaryButton: {
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  secondaryButtonText: {
+    color: colors.primary,
+    ...typography.body,
   },
   footer: {
     textAlign: "center",

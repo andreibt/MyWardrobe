@@ -101,7 +101,7 @@ export default function EditItemScreen() {
       ...(data.imageUrl !== initialImageUrl ? { imageSerialized: "" } : {}),
     };
     await updateWardrobeItem(itemId, payload);
-    router.replace("/(app)/(tabs)/home");
+    router.replace("/(app)/(wardrobe)/wardrobe-list");
   };
 
   return (
