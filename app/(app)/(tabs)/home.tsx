@@ -9,6 +9,11 @@ import {
   subscribeToFridgeItems,
   type FridgeItem,
 } from "../../../src/lib/firestore/fridgeItems";
+import { subscribeToTryOnItems, type TryOnItem } from "../../../src/lib/firestore/tryOnList";
+import {
+  subscribeToWardrobeCalendarDays,
+  type WardrobeCalendarDay,
+} from "../../../src/lib/firestore/wardrobeCalendar";
 import {
   subscribeToWardrobeItems,
   type WardrobeItem,
@@ -35,6 +40,8 @@ export default function HomeScreen() {
   const palette = theme.colors;
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
+  const [calendarDays, setCalendarDays] = useState<WardrobeCalendarDay[]>([]);
+  const [tryOnItems, setTryOnItems] = useState<TryOnItem[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +57,22 @@ export default function HomeScreen() {
       return;
     }
     return subscribeToFridgeItems(user.id, setFridgeItems);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setCalendarDays([]);
+      return;
+    }
+    return subscribeToWardrobeCalendarDays(user.id, setCalendarDays);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setTryOnItems([]);
+      return;
+    }
+    return subscribeToTryOnItems(user.id, setTryOnItems);
   }, [user]);
 
   const activeFridgeItems = useMemo(
@@ -96,6 +119,20 @@ export default function HomeScreen() {
   }, [activeFridgeItems, t, wardrobeItems]);
 
   const totalItems = wardrobeItems.length + activeFridgeItems.length;
+  const todayKey = formatDateKey(new Date());
+  const todayCalendarDay = useMemo(
+    () => calendarDays.find((day) => day.date === todayKey),
+    [calendarDays, todayKey]
+  );
+  const todayPreviewItems = useMemo(() => {
+    if (!todayCalendarDay) {
+      return [];
+    }
+    const selectedConfigs = new Set(todayCalendarDay.configNames);
+    return tryOnItems
+      .filter((item) => item.configuration && selectedConfigs.has(item.configuration))
+      .slice(0, 4);
+  }, [todayCalendarDay, tryOnItems]);
 
   return (
     <View style={styles.container}>
@@ -194,6 +231,43 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.recentList}>
+            {todayCalendarDay && todayCalendarDay.configNames.length > 0 ? (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/(app)/wardrobe-calendar-day",
+                    params: { date: todayKey },
+                  })
+                }
+                style={({ pressed }) => [styles.todayCalendarCard, pressed && styles.cardPressed]}
+              >
+                <View style={styles.todayCalendarHeader}>
+                  <View style={styles.recentIcon}>
+                    <MaterialCommunityIcons name="calendar-today-outline" color={palette.primary} size={22} />
+                  </View>
+                  <View style={styles.recentInfo}>
+                    <Text style={styles.recentName} numberOfLines={1}>
+                      {t("home.dashboard.today_calendar")}
+                    </Text>
+                    <Text style={styles.recentMeta} numberOfLines={1}>
+                      {formatHomeDate(new Date())} · {t("home.dashboard.configurations", {
+                        count: todayCalendarDay.configNames.length,
+                      })}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.todayPreviewRow}>
+                  {todayPreviewItems.map((item) => (
+                    <View key={item.id} style={styles.todayPreviewTile}>
+                      <MaterialCommunityIcons name="tshirt-crew-outline" color={palette.primary} size={18} />
+                    </View>
+                  ))}
+                  <Text style={styles.todayConfigText} numberOfLines={1}>
+                    {todayCalendarDay.configNames.join(", ")}
+                  </Text>
+                </View>
+              </Pressable>
+            ) : null}
             {recentItems.length > 0 ? (
               recentItems.map((item) => (
                 <View key={item.id} style={styles.recentItem}>
@@ -286,6 +360,21 @@ function isExpiringSoon(expirationDate: string) {
   }
   expiry.setHours(0, 0, 0, 0);
   return expiry >= today && expiry <= soon;
+}
+
+function formatDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatHomeDate(date: Date) {
+  return date.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function getTagStyle(kind: RecentItem["kind"], styles: ReturnType<typeof createStyles>) {
@@ -473,6 +562,41 @@ const createStyles = (theme: AppTheme) => {
       borderWidth: 1,
       borderColor: palette.border,
       backgroundColor: palette.surface2,
+    },
+    todayCalendarCard: {
+      gap: spacing.sm,
+      paddingVertical: 10,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: palette.surface2,
+    },
+    todayCalendarHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    todayPreviewRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      paddingLeft: 52,
+    },
+    todayPreviewTile: {
+      width: 28,
+      height: 28,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      backgroundColor: primaryDim,
+    },
+    todayConfigText: {
+      flex: 1,
+      color: palette.textMuted,
+      fontSize: 12,
+      lineHeight: 17,
+      fontWeight: "600",
     },
     recentIcon: {
       width: 44,

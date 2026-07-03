@@ -86,5 +86,19 @@ service cloud.firestore {
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == request.auth.uid;
     }
+
+    match /wardrobeCalendarDays/{dayId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && dayId == request.auth.uid + '_' + request.resource.data.date;
+      allow read: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == request.auth.uid
+        && dayId == request.auth.uid + '_' + request.resource.data.date;
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+    }
   }
 }
