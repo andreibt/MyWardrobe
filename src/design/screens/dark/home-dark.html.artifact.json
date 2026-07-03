@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/home-dark.html",
+  "entry": "screens/home-dark.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-03T13:02:29.172Z",
+  "updatedAt": "2026-07-03T13:02:29.172Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

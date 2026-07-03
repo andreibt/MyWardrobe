@@ -12,7 +12,8 @@
       "package": "com.anonymous.mywardrobe"
     },
     "ios": {
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "bundleIdentifier": "com.anonymous.mywardrobe"
     }
   }
 }

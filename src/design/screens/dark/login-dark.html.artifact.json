@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/login-dark.html",
+  "entry": "screens/login-dark.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-03T13:02:07.252Z",
+  "updatedAt": "2026-07-03T13:02:07.252Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}
