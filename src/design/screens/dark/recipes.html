@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Recipes — PolarNest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#0D1117; --s1:#161B22; --s2:#1F2630; --s3:#202938; --primary:#3BC9F5; --pdim:rgba(59,201,245,0.12); --success:#46D37B; --sdim:rgba(70,211,123,0.12); --warning:#F2C94C; --error:#F56A6A; --edim:rgba(245,106,106,0.12); --text:#F5F7FA; --text2:#B8C1CC; --muted:#8A95A6; --border:#2A3340; --radius:16px; --radius-lg:24px; --radius-full:9999px; --font:'Inter',system-ui,-apple-system,sans-serif; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html,body { width:100%; min-height:100vh; background:var(--bg); font:400 15px/1.6 var(--font); color:var(--text); -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+    .phone { max-width:390px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; background:var(--bg); position:relative; }
+    .status-bar { display:flex; justify-content:space-between; padding:12px 20px 6px; font-size:12px; font-weight:600; flex-shrink:0; }
+    .header { display:flex; justify-content:space-between; align-items:center; padding:0 20px 8px; flex-shrink:0; }
+    .header h1 { font-size:26px; font-weight:700; letter-spacing:-0.02em; }
+    .header-actions { display:flex; gap:8px; }
+    .header-actions button { width:40px;height:40px; border-radius:50%; border:1px solid var(--border); background:var(--s2); color:var(--text2); font-size:18px; cursor:pointer; display:grid; place-items:center; transition:background 0.15s; }
+    .header-actions button:hover { background:var(--s3); }
+    .content { flex:1; overflow-y:auto; padding:0 20px 100px; }
+    .search-bar { display:flex; align-items:center; gap:8px; background:var(--s2); border:1px solid var(--border); border-radius:var(--radius-full); padding:10px 16px; margin-bottom:12px; }
+    .search-bar input { flex:1; border:0; background:none; font:400 14px var(--font); color:var(--text); outline:none; }
+    .search-bar input::placeholder { color:var(--muted); }
+    .filter-row { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; scrollbar-width:none; }
+    .filter-row::-webkit-scrollbar { display:none; }
+    .chip { flex-shrink:0; padding:7px 16px; border-radius:var(--radius-full); border:1px solid var(--border); background:var(--s2); font:500 13px var(--font); color:var(--text2); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .chip.active { background:var(--pdim); color:var(--primary); border-color:var(--primary); }
+    .recipe-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .recipe-card { background:var(--s2); border-radius:var(--radius-lg); border:1px solid var(--border); overflow:hidden; cursor:pointer; transition:transform 0.15s; display:flex; flex-direction:column; }
+    .recipe-card:active { transform:scale(0.97); }
+    .recipe-card .rc-img { width:100%; aspect-ratio:16/9; background:linear-gradient(135deg,var(--s3),var(--s1)); display:flex; align-items:center; justify-content:center; font-size:36px; color:var(--muted); position:relative; }
+    .recipe-card .rc-img .rc-time { position:absolute; bottom:8px; left:8px; background:rgba(13,17,23,0.8); backdrop-filter:blur(8px); padding:4px 10px; border-radius:var(--radius-full); font-size:11px; font-weight:500; color:var(--text); }
+    .recipe-card .rc-body { padding:14px 14px 16px; display:flex; flex-direction:column; gap:6px; }
+    .recipe-card .rc-title { font-size:15px; font-weight:700; line-height:1.3; letter-spacing:-0.01em; }
+    .recipe-card .rc-meta { display:flex; gap:12px; font-size:12px; color:var(--text2); }
+    .recipe-card .rc-ingredients { display:flex; flex-wrap:wrap; gap:4px; }
+    .recipe-card .rc-ing { font-size:10px; font-weight:500; padding:3px 8px; border-radius:var(--radius-full); }
+    .recipe-card .rc-ing.avail { background:var(--sdim); color:var(--success); }
+    .recipe-card .rc-ing.missing { background:var(--edim); color:var(--error); }
+    .recipe-card .rc-footer { display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid var(--border); margin-top:2px; }
+    .recipe-card .rc-footer .rc-cal { font-size:12px; color:var(--text2); }
+    .recipe-card .rc-footer .rc-arrow { font-size:16px; color:var(--text2); }
+    .pagination { display:flex; justify-content:center; align-items:center; gap:6px; padding:20px 0; }
+    .pagination button { width:36px;height:36px; border-radius:50%; border:1px solid var(--border); background:var(--s2); color:var(--text2); font-size:13px; cursor:pointer; display:grid; place-items:center; transition:all 0.15s; font-family:var(--font); }
+    .pagination button.active { background:var(--primary); color:#0D1117; border-color:var(--primary); }
+    .pagination button:hover:not(.active) { background:var(--s3); }
+    .tab-bar { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:390px; display:flex; justify-content:space-around; align-items:center; padding:8px 0 max(env(safe-area-inset-bottom,8px),8px); background:rgba(22,27,34,0.96); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); }
+    .tab-item { display:flex; flex-direction:column; align-items:center; gap:2px; text-decoration:none; color:var(--muted); font-size:10px; font-weight:500; padding:4px 12px; cursor:pointer; transition:color 0.15s; }
+    .tab-item .tab-icon { font-size:20px; line-height:1; }
+    .tab-item.active { color:var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="status-bar"><span>9:41</span><span>&#9679;&#9679;&#9679;</span></div>
+    <div class="header">
+      <h1>Recipes</h1>
+      <div class="header-actions"><button>&#8981;</button><button>&#8942;</button></div>
+    </div>
+    <div class="content">
+      <div class="search-bar"><input type="search" placeholder="Search recipes..." /></div>
+      <div class="filter-row">
+        <span class="chip active">All</span>
+        <span class="chip">Pasta</span>
+        <span class="chip">Salads</span>
+        <span class="chip">Soups</span>
+        <span class="chip">Quick meals</span>
+        <span class="chip">Desserts</span>
+      </div>
+      <div class="recipe-grid">
+        <div class="recipe-card" onclick="location.href='recipe-detail.html'">
+          <div class="rc-img">&#127837;<span class="rc-time">25 min</span></div>
+          <div class="rc-body">
+            <div class="rc-title">Pasta Carbonara</div>
+            <div class="rc-meta"><span>2 portions</span><span>&#9733; 4.8</span></div>
+            <div class="rc-ingredients"><span class="rc-ing avail">Pasta &#10003;</span><span class="rc-ing avail">Eggs &#10003;</span><span class="rc-ing missing">Pancetta</span><span class="rc-ing missing">Pecorino</span></div>
+            <div class="rc-footer"><span class="rc-cal">&#9889; 420 cal</span><span class="rc-arrow">&#8250;</span></div>
+          </div>
+        </div>
+        <div class="recipe-card" onclick="location.href='recipe-detail.html'">
+          <div class="rc-img">&#129364;<span class="rc-time">15 min</span></div>
+          <div class="rc-body">
+            <div class="rc-title">Greek Yogurt Bowl</div>
+            <div class="rc-meta"><span>1 portion</span><span>&#9733; 4.5</span></div>
+            <div class="rc-ingredients"><span class="rc-ing avail">Yogurt &#10003;</span><span class="rc-ing avail">Honey &#10003;</span><span class="rc-ing missing">Granola</span></div>
+            <div class="rc-footer"><span class="rc-cal">&#9889; 280 cal</span><span class="rc-arrow">&#8250;</span></div>
+          </div>
+        </div>
+        <div class="recipe-card" onclick="location.href='recipe-detail.html'">
+          <div class="rc-img">&#129361;<span class="rc-time">10 min</span></div>
+          <div class="rc-body">
+            <div class="rc-title">Spinach Salad</div>
+            <div class="rc-meta"><span>2 portions</span><span>&#9733; 4.2</span></div>
+            <div class="rc-ingredients"><span class="rc-ing avail">Spinach &#10003;</span><span class="rc-ing missing">Feta</span><span class="rc-ing missing">Walnuts</span></div>
+            <div class="rc-footer"><span class="rc-cal">&#9889; 180 cal</span><span class="rc-arrow">&#8250;</span></div>
+          </div>
+        </div>
+        <div class="recipe-card" onclick="location.href='recipe-detail.html'">
+          <div class="rc-img">&#127858;<span class="rc-time">40 min</span></div>
+          <div class="rc-body">
+            <div class="rc-title">Chicken Soup</div>
+            <div class="rc-meta"><span>4 portions</span><span>&#9733; 4.9</span></div>
+            <div class="rc-ingredients"><span class="rc-ing avail">Chicken &#10003;</span><span class="rc-ing avail">Carrots &#10003;</span><span class="rc-ing avail">Celery &#10003;</span><span class="rc-ing missing">Noodles</span></div>
+            <div class="rc-footer"><span class="rc-cal">&#9889; 310 cal</span><span class="rc-arrow">&#8250;</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="pagination">
+        <button disabled>&#8249;</button>
+        <button class="active">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>&#8250;</button>
+      </div>
+    </div>
+    <nav class="tab-bar">
+      <a class="tab-item" href="home-dark.html"><span class="tab-icon">&#9650;</span>Home</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#9733;</span>Fridge</a>
+      <a class="tab-item active" href="#"><span class="tab-icon">&#127858;</span>Recipes</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#8981;</span>Search</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#9881;</span>Settings</a>
+    </nav>
+  </div>
+  <script>
+    document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('active')});c.classList.add('active')})});
+  </script>
+</body>
+</html>
