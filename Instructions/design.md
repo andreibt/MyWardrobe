@@ -740,7 +740,173 @@ Large Save button.
 
 ---
 
-# 9 Receipt Import
+# 9 Pantry
+
+Purpose
+
+Long-term food storage inventory.
+
+Structure
+
+Same structure as the Fridge component.
+
+Includes:
+
+* Pantry list screen
+* Add pantry item screen
+* Edit pantry item screen
+
+List screen
+
+Use a list component similar to the `fridge-list` component.
+
+Pantry cards should use the same horizontal food-card rhythm as fridge items:
+
+* Thumbnail
+* Name
+* Description
+* Quantity
+* Quantity type
+* Expiration indicator when available
+* Freshness badge when applicable
+* Tags
+* Image preview
+* Edit action
+* Delete/archive action
+
+Pantry items should not display calories.
+
+History mode may follow the same behavior as the fridge list when pantry items are archived or restored.
+
+Data structure
+
+Use the same data structure as the `fridge-list` component, except pantry items do not include calories.
+
+Required fields:
+
+* ownerId
+* name
+* description
+* quantity
+* quantityType
+* expirationDate
+* tags
+* imageUrl
+* imageSerialized
+* createdAt
+* isHistory
+
+Visual treatment
+
+Use the same calm food-inventory styling as Fridge, but tune labels and empty states to pantry storage.
+
+Empty state should invite users to add pantry staples.
+
+Add/Edit screen
+
+Same form language as Add/Edit Fridge.
+
+Organize into:
+
+General
+
+Quantity
+
+Expiration
+
+Tags
+
+Image
+
+Do not show nutrition or calories fields.
+
+Large Save button.
+
+---
+
+# 10 Cocktails
+
+Purpose
+
+Cocktail inventory and drink ingredient tracking.
+
+Structure
+
+Same structure as the Fridge component.
+
+Includes:
+
+* Cocktail list screen
+* Add cocktail item screen
+* Edit cocktail item screen
+
+List screen
+
+Use a list component similar to the `fridge-list` component.
+
+Cocktail cards should use the same horizontal card layout as fridge items:
+
+* Thumbnail
+* Name
+* Description
+* Quantity
+* Quantity type
+* Expiration indicator when available
+* Freshness badge when applicable
+* Calories when available
+* Tags
+* Image preview
+* Edit action
+* Delete/archive action
+
+History mode may follow the same behavior as the fridge list when cocktail items are archived or restored.
+
+Data structure
+
+Use the same data structure as the `fridge-list` component.
+
+Required fields:
+
+* ownerId
+* name
+* description
+* quantity
+* quantityType
+* expirationDate
+* calories
+* tags
+* imageUrl
+* imageSerialized
+* createdAt
+* isHistory
+
+Visual treatment
+
+Use the same premium inventory styling as Fridge with a slightly more refined bar-shelf feeling through imagery, icons and empty states.
+
+Empty state should invite users to add bottles, mixers or cocktail ingredients.
+
+Add/Edit screen
+
+Same form language as Add/Edit Fridge.
+
+Organize into:
+
+General
+
+Nutrition
+
+Expiration
+
+Tags
+
+Image
+
+Large Save button.
+
+---
+
+# 11 Receipt Import
 
 Step 1
 
@@ -766,7 +932,7 @@ Celebrate with success animation.
 
 ---
 
-# 10 Recipes
+# 12 Recipes
 
 Recipe cards
 
@@ -794,7 +960,7 @@ Pinned pagination.
 
 ---
 
-# 11 Recipe Details
+# 13 Recipe Details
 
 Hero section
 
@@ -816,7 +982,7 @@ Recipe editor mirrors same styling.
 
 ---
 
-# 12 Assistant
+# 14 Assistant
 
 Conversation style
 
@@ -850,7 +1016,7 @@ Optional suggested prompts.
 
 ---
 
-# 13 Settings
+# 15 Settings
 
 Sections
 
@@ -899,6 +1065,10 @@ Fridge Module
 Home
 
 Fridge
+
+Pantry
+
+Cocktails
 
 Recipes
 
