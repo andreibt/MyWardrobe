@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import { subscribeToFridgeItems, type FridgeItem } from "../../../src/lib/firestore/fridgeItems";
 import { subscribeToRecipes, type Recipe } from "../../../src/lib/firestore/recipes";
+import { addShoppingListItems } from "../../../src/lib/firestore/shoppingList";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../../src/theme/tokens";
@@ -85,6 +86,30 @@ export default function RecipesScreen() {
 
   const openRecipe = (pathname: "/(app)/recipe-details" | "/(app)/edit-recipe", recipe: Recipe) => {
     router.push({ pathname, params: { recipe: JSON.stringify(recipe) } });
+  };
+
+  const addMissingItems = (recipe: Recipe) => {
+    if (!user) {
+      return;
+    }
+    const missingIngredients = recipe.ingredients.filter(
+      (ingredient) => !currentFridgeItemIds.has(ingredient.fridgeItemId)
+    );
+    const fridgeItemsById = new Map(fridgeItems.map((item) => [item.id, item]));
+    addShoppingListItems(
+      user.id,
+      missingIngredients.map((ingredient) => {
+        const fridgeItem = fridgeItemsById.get(ingredient.fridgeItemId);
+        return {
+          source: fridgeItem?.isHistory ? "fridgeHistory" : "plain",
+          fridgeItemId: fridgeItem ? ingredient.fridgeItemId : undefined,
+          name: ingredient.name,
+          count: 1,
+          quantity: ingredient.quantity,
+          quantityType: ingredient.quantityType,
+        };
+      })
+    ).catch(() => {});
   };
 
   const renderRecipe = ({ item }: { item: Recipe }) => {
@@ -166,6 +191,19 @@ export default function RecipesScreen() {
               </View>
             </View>
           </View>
+
+          {missingIngredients.length > 0 ? (
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation();
+                addMissingItems(item);
+              }}
+              style={({ pressed }) => [styles.shoppingButton, pressed && styles.buttonPressed]}
+            >
+              <MaterialCommunityIcons name="cart-plus" color={colors.primary} size={16} />
+              <Text style={styles.shoppingButtonText}>{t("recipes.add_missing")}</Text>
+            </Pressable>
+          ) : null}
         </View>
       </Pressable>
     );
@@ -453,6 +491,23 @@ const createStyles = (theme: AppTheme) => {
     mutedChip: {
       color: colors.textMuted,
       ...typography.caption,
+    },
+    shoppingButton: {
+      minHeight: 36,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface3,
+    },
+    shoppingButtonText: {
+      color: colors.primary,
+      ...typography.caption,
+      fontWeight: "700",
     },
     emptyState: {
       alignItems: "center",

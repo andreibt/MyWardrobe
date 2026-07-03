@@ -65,6 +65,15 @@ export default function FridgeTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="shopping-list"
+        options={{
+          title: t("tabs.shopping_list"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="cart-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="assistant"
         options={{
           title: t("tabs.assistant"),

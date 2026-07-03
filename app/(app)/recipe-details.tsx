@@ -8,6 +8,7 @@ import { RecipeIngredientZone } from "../../src/components/RecipeIngredientZone"
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { subscribeToFridgeItems, type FridgeItem } from "../../src/lib/firestore/fridgeItems";
 import type { Recipe } from "../../src/lib/firestore/recipes";
+import { addShoppingListItems } from "../../src/lib/firestore/shoppingList";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../src/theme/tokens";
@@ -52,6 +53,27 @@ export default function RecipeDetailsScreen() {
     () => recipe?.ingredients.filter((ingredient) => !currentFridgeItemIds.has(ingredient.fridgeItemId)) ?? [],
     [currentFridgeItemIds, recipe]
   );
+
+  const addMissingItems = () => {
+    if (!user || !recipe) {
+      return;
+    }
+    const fridgeItemsById = new Map(fridgeItems.map((item) => [item.id, item]));
+    addShoppingListItems(
+      user.id,
+      needToBuyIngredients.map((ingredient) => {
+        const fridgeItem = fridgeItemsById.get(ingredient.fridgeItemId);
+        return {
+          source: fridgeItem?.isHistory ? "fridgeHistory" : "plain",
+          fridgeItemId: fridgeItem ? ingredient.fridgeItemId : undefined,
+          name: ingredient.name,
+          count: 1,
+          quantity: ingredient.quantity,
+          quantityType: ingredient.quantityType,
+        };
+      })
+    ).catch(() => {});
+  };
 
   if (!recipe) {
     return (
@@ -109,6 +131,15 @@ export default function RecipeDetailsScreen() {
             </Text>
           </View>
         </View>
+        {needToBuyIngredients.length > 0 ? (
+          <Pressable
+            onPress={addMissingItems}
+            style={({ pressed }) => [styles.shoppingButton, pressed && styles.buttonPressed]}
+          >
+            <MaterialCommunityIcons name="cart-plus" color={colors.primary} size={17} />
+            <Text style={styles.shoppingButtonText}>{t("recipes.add_missing")}</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -259,6 +290,23 @@ const createStyles = (theme: AppTheme) => {
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface2,
+    },
+    shoppingButton: {
+      minHeight: 40,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface3,
+    },
+    shoppingButtonText: {
+      color: colors.primary,
+      ...typography.body,
+      fontWeight: "700",
     },
     secondaryButtonText: {
       color: colors.primary,
