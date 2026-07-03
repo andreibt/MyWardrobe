@@ -19,7 +19,9 @@ export type AppTheme = {
     surface: string;
     surface2: string;
     surface3: string;
+    card: string;
     primary: string;
+    accent: string;
     text: string;
     textMuted: string;
     muted: string;
@@ -50,7 +52,9 @@ const themes: Record<ThemeMode, AppTheme> = {
       surface: "#111318",
       surface2: "#1A1D23",
       surface3: "#242830",
+      card: "#1E293B",
       primary: "#00D4FF",
+      accent: "#00E676",
       text: "#F0F2F5",
       textMuted: "#8B8FA3",
       muted: "#5A5E6E",
@@ -69,7 +73,9 @@ const themes: Record<ThemeMode, AppTheme> = {
       surface: "#ECEEF1",
       surface2: "#FFFFFF",
       surface3: "#E7E9EC",
+      card: "#ECEEF1",
       primary: "#161B22",
+      accent: "#0F9F61",
       text: "#0D1117",
       textMuted: "#5E6166",
       muted: "#8D9094",
