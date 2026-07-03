@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,12 +15,14 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TagSelector } from "../../src/components/TagSelector";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { updateWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
 import { useAuth } from "../../src/providers/AuthProvider";
-import { colors, radius, spacing, typography } from "../../src/theme/tokens";
+import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
+import { radius, spacing, typography } from "../../src/theme/tokens";
 
 // const itemSchema = z.object({
 //   title: z.string().min(2, "validation.title_required"),
@@ -59,6 +62,10 @@ export default function EditItemScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const colors = theme.colors;
   const params = useLocalSearchParams<{
     id?: string | string[];
     title?: string | string[];
@@ -109,10 +116,27 @@ export default function EditItemScreen() {
       behavior={Platform.select({ ios: "padding", android: undefined })}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>{t("edit.title")}</Text>
-          <Text style={styles.subtitle}>{t("edit.subtitle")}</Text>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: Math.max(insets.top + spacing.sm, spacing.lg),
+            paddingBottom: Math.max(insets.bottom + spacing.lg, spacing.xl),
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.navBar}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
+          >
+            <MaterialCommunityIcons name="arrow-left" color={colors.text} size={20} />
+          </Pressable>
+          <View style={styles.navTitleGroup}>
+            <Text style={styles.title}>{t("edit.title")}</Text>
+            <Text style={styles.subtitle}>{t("edit.subtitle")}</Text>
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -225,62 +249,80 @@ export default function EditItemScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => {
+  const colors = theme.colors;
+
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
   content: {
     flexGrow: 1,
-    padding: spacing.lg,
+    paddingHorizontal: 20,
     gap: spacing.lg,
   },
-  header: {
+  navBar: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
+  },
+  navTitleGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   title: {
     color: colors.text,
-    // ...typography.h1,
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: "600",
   },
   subtitle: {
     color: colors.muted,
-    // ...typography.body,
+    ...typography.caption,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   label: {
-    color: colors.text,
-    // ...typography.caption,
+    color: colors.textMuted,
+    ...typography.caption,
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
+    fontWeight: "600",
   },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.sm,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     color: colors.text,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
   multilineInput: {
     minHeight: 96,
     textAlignVertical: "top",
   },
   error: {
-    color: "#B00020",
-    // ...typography.caption,
+    color: colors.danger,
+    ...typography.caption,
   },
   button: {
     marginTop: spacing.sm,
     backgroundColor: colors.primary,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: "center",
   },
   buttonPressed: {
@@ -290,12 +332,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: colors.background,
-    // ...typography.h2,
+    color: colors.logoTint,
+    ...typography.h2,
   },
   link: {
     color: colors.primary,
     textAlign: "center",
-    // ...typography.body,
+    ...typography.body,
   },
-});
+  });
+};

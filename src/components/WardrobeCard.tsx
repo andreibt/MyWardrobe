@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useI18n } from "../i18n/I18nProvider";
 import type { WardrobeItem } from "../lib/firestore/wardrobeItems";
-import { colors, radius, spacing, typography } from "../theme/tokens";
+import { useTheme, type AppTheme } from "../providers/ThemeProvider";
+import { radius, spacing, typography } from "../theme/tokens";
 
 type WardrobeCardProps = {
   item: WardrobeItem;
@@ -23,6 +24,8 @@ export function WardrobeCard({
   onDelete,
 }: WardrobeCardProps) {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const imageUri = item.imageSerialized || item.imageUrl;
 
@@ -115,10 +118,13 @@ export function WardrobeCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => {
+  const colors = theme.colors;
+
+  return StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    backgroundColor: colors.surface2,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
@@ -131,12 +137,14 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: 160,
+    backgroundColor: colors.surface3,
   },
   compactImage: {
-    height: 112,
+    height: undefined,
+    aspectRatio: 1,
   },
   imageButton: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface3,
   },
   imageButtonPressed: {
     opacity: 0.85,
@@ -166,7 +174,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.pill,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surface2,
   },
   closeButtonText: {
     color: colors.text,
@@ -181,7 +189,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    ...typography.h2,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: "600",
   },
   compactTitle: {
     ...typography.body,
@@ -209,9 +219,9 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface3,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -223,7 +233,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   deleteButton: {
-    backgroundColor: colors.dangerSurface,
+    backgroundColor: theme.isDark ? "#3B1720" : "#FFF2F0",
     borderColor: colors.danger,
   },
   deleteText: {
@@ -231,11 +241,12 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   tryOnButton: {
-    backgroundColor: colors.successSurface,
+    backgroundColor: theme.isDark ? "rgba(0, 230, 118, 0.12)" : "#F6FFED",
     borderColor: colors.accent,
   },
   tryOnText: {
     color: colors.accent,
     ...typography.caption,
   },
-});
+  });
+};

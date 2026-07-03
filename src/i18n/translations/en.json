@@ -124,6 +124,7 @@
   "wardrobe_list.title": "Wardrobe Library",
   "wardrobe_list.subtitle": "A quick visual inventory of the pieces you already own.",
   "wardrobe_list.add_button": "+ Add new item",
+  "wardrobe_list.search_placeholder": "Search wardrobe...",
   "wardrobe_list.filter_title": "Filter tags",
   "wardrobe_list.filter_hint": "All items",
   "wardrobe_list.filter_count": "{{count}} selected",

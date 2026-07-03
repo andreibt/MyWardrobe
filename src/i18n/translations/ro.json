@@ -115,6 +115,7 @@
   "wardrobe_list.title": "Biblioteca garderobei",
   "wardrobe_list.subtitle": "O evidență vizuală rapidă a pieselor pe care le deții.",
   "wardrobe_list.add_button": "+ Adaugă articol nou",
+  "wardrobe_list.search_placeholder": "Caută în garderobă...",
   "wardrobe_list.filter_title": "Filtrează după etichete",
   "wardrobe_list.filter_hint": "Toate articolele",
   "wardrobe_list.filter_count": "{{count}} selectate",

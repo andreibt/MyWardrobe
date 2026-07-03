@@ -2,10 +2,12 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
-import { colors } from "../../../src/theme/tokens";
+import { useTheme } from "../../../src/providers/ThemeProvider";
 
 export default function WardrobeTabsLayout() {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   return (
     <Tabs
