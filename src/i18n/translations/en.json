@@ -142,6 +142,7 @@
   "shopping_list.source_history": "History",
   "shopping_list.source_plain": "New",
   "shopping_list.quantity": "{{quantity}} {{type}}",
+  "shopping_list.clear_all": "Clear all",
   "wardrobe_list.title": "Wardrobe Library",
   "wardrobe_list.subtitle": "A quick visual inventory of the pieces you already own.",
   "wardrobe_list.add_button": "+ Add new item",

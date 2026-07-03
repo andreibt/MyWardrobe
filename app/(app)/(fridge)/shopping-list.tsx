@@ -58,6 +58,7 @@ export default function ShoppingListScreen() {
     () => fridgeItems.filter((item) => item.isHistory).slice(0, 8),
     [fridgeItems]
   );
+  const allItemsChecked = items.length > 0 && items.every((item) => item.checked);
 
   const saveItems = (nextItems: ShoppingListItem[]) => {
     if (!user) {
@@ -106,6 +107,10 @@ export default function ShoppingListScreen() {
 
   const removeItem = (itemId: string) => {
     saveItems(items.filter((item) => item.id !== itemId));
+  };
+
+  const clearAllItems = () => {
+    saveItems([]);
   };
 
   const renderShoppingItem = ({ item }: { item: ShoppingListItem }) => {
@@ -231,6 +236,17 @@ export default function ShoppingListScreen() {
                   {t("shopping_list.count", { count: items.length })}
                 </Text>
               </View>
+              {allItemsChecked ? (
+                <Pressable
+                  onPress={clearAllItems}
+                  style={({ pressed }) => [styles.clearAllButton, pressed && styles.buttonPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("shopping_list.clear_all")}
+                >
+                  <MaterialCommunityIcons name="broom" color={colors.danger} size={17} />
+                  <Text style={styles.clearAllText}>{t("shopping_list.clear_all")}</Text>
+                </Pressable>
+              ) : null}
             </View>
 
             <View style={styles.addPanel}>
@@ -314,6 +330,22 @@ const createStyles = (theme: AppTheme) => {
       fontSize: 14,
       lineHeight: 20,
       fontWeight: "500",
+    },
+    clearAllButton: {
+      minHeight: 38,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 19,
+      borderWidth: 1,
+      borderColor: colors.danger,
+      backgroundColor: theme.isDark ? "rgba(255, 71, 87, 0.12)" : "#FFF2F0",
+    },
+    clearAllText: {
+      color: colors.danger,
+      ...typography.caption,
+      fontWeight: "700",
     },
     addPanel: {
       gap: spacing.sm,
