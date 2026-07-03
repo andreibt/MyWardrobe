@@ -77,7 +77,7 @@ export default function HomeScreen() {
     const wardrobeRecent = wardrobeItems.slice(0, 2).map((item) => ({
       id: `wardrobe-${item.id}`,
       name: item.title,
-      meta: "Wardrobe",
+      meta: t("home.dashboard.meta_wardrobe"),
       kind: "wardrobe" as const,
       icon: "tshirt-crew-outline" as const,
     }));
@@ -85,13 +85,15 @@ export default function HomeScreen() {
     const fridgeRecent = activeFridgeItems.slice(0, 2).map((item) => ({
       id: `fridge-${item.id}`,
       name: item.name,
-      meta: item.expirationDate ? `Expires ${item.expirationDate}` : "Fridge",
+      meta: item.expirationDate
+        ? t("home.dashboard.expires", { date: item.expirationDate })
+        : t("home.dashboard.meta_fridge"),
       kind: isExpiringSoon(item.expirationDate) ? ("expiring" as const) : ("fridge" as const),
       icon: "food-apple-outline" as const,
     }));
 
     return [...wardrobeRecent, ...fridgeRecent].slice(0, 3);
-  }, [activeFridgeItems, wardrobeItems]);
+  }, [activeFridgeItems, t, wardrobeItems]);
 
   const totalItems = wardrobeItems.length + activeFridgeItems.length;
 
@@ -109,8 +111,8 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Good morning</Text>
-            <Text style={styles.title}>My Inventory</Text>
+            <Text style={styles.greeting}>{t("home.dashboard.greeting")}</Text>
+            <Text style={styles.title}>{t("home.dashboard.title")}</Text>
           </View>
           <View style={styles.headerActions}>
             <Pressable
@@ -132,9 +134,19 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.statsRow}>
-          <StatCard label="Total" value={totalItems} styles={styles} />
-          <StatCard label="Wardrobe" value={wardrobeItems.length} color={palette.primary} styles={styles} />
-          <StatCard label="Fridge" value={activeFridgeItems.length} color={homeColors.secondary} styles={styles} />
+          <StatCard label={t("home.dashboard.total")} value={totalItems} styles={styles} />
+          <StatCard
+            label={t("home.wardrobe")}
+            value={wardrobeItems.length}
+            color={palette.primary}
+            styles={styles}
+          />
+          <StatCard
+            label={t("home.fridge")}
+            value={activeFridgeItems.length}
+            color={homeColors.secondary}
+            styles={styles}
+          />
         </View>
 
         <View style={styles.moduleGrid}>
@@ -148,8 +160,10 @@ export default function HomeScreen() {
               <MaterialCommunityIcons name="wardrobe-outline" color={palette.primary} size={22} />
             </View>
             <Text style={styles.moduleTitle}>{t("home.wardrobe")}</Text>
-            <Text style={styles.moduleSubtitle}>{wardrobeItems.length} items</Text>
-            <Text style={styles.moduleLink}>{"Browse ->"}</Text>
+            <Text style={styles.moduleSubtitle}>
+              {t("home.dashboard.items", { count: wardrobeItems.length })}
+            </Text>
+            <Text style={styles.moduleLink}>{t("home.dashboard.browse")}</Text>
           </Pressable>
 
           <Pressable
@@ -162,17 +176,21 @@ export default function HomeScreen() {
               <MaterialCommunityIcons name="fridge-outline" color={homeColors.secondary} size={22} />
             </View>
             <Text style={styles.moduleTitle}>{t("home.fridge")}</Text>
-            <Text style={styles.moduleSubtitle}>{activeFridgeItems.length} active items</Text>
+            <Text style={styles.moduleSubtitle}>
+              {t("home.dashboard.active_items", { count: activeFridgeItems.length })}
+            </Text>
             <Text style={[styles.moduleLink, expiringCount > 0 && styles.warningText]}>
-              {expiringCount > 0 ? `${expiringCount} expiring ->` : "Browse ->"}
+              {expiringCount > 0
+                ? t("home.dashboard.expiring", { count: expiringCount })
+                : t("home.dashboard.browse")}
             </Text>
           </Pressable>
         </View>
 
         <View>
           <View style={styles.sectionLabel}>
-            <Text style={styles.sectionTitle}>Recent activity</Text>
-            <Text style={styles.sectionAction}>See all</Text>
+            <Text style={styles.sectionTitle}>{t("home.dashboard.recent_activity")}</Text>
+            <Text style={styles.sectionAction}>{t("home.dashboard.see_all")}</Text>
           </View>
 
           <View style={styles.recentList}>
@@ -193,31 +211,31 @@ export default function HomeScreen() {
                   <View style={[styles.recentTag, getTagStyle(item.kind, styles)]}>
                     <Text style={[styles.recentTagText, getTagTextStyle(item.kind, styles)]}>
                       {item.kind === "expiring"
-                        ? "Expiring"
+                        ? t("home.dashboard.tag_expiring")
                         : item.kind === "fridge"
-                        ? "Fridge"
-                        : "New"}
+                        ? t("home.dashboard.tag_fridge")
+                        : t("home.dashboard.tag_new")}
                     </Text>
                   </View>
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyListText}>No recent items yet.</Text>
+              <Text style={styles.emptyListText}>{t("home.dashboard.no_recent")}</Text>
             )}
           </View>
         </View>
 
         <View style={styles.emptyState}>
           <MaterialCommunityIcons name="checkbox-marked-circle-outline" color={palette.muted} size={40} />
-          <Text style={styles.emptyTitle}>Everything organized</Text>
+          <Text style={styles.emptyTitle}>{t("home.dashboard.everything_organized")}</Text>
           <Text style={styles.emptyText}>
-            Your inventory is up to date. Add items to keep tracking.
+            {t("home.dashboard.organized_body")}
           </Text>
           <Pressable
             onPress={() => router.push("/(app)/add-item")}
             style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
           >
-            <Text style={styles.emptyButtonText}>Add item</Text>
+            <Text style={styles.emptyButtonText}>{t("home.dashboard.add_item")}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -230,7 +248,7 @@ export default function HomeScreen() {
           pressed && styles.fabPressed,
         ]}
         accessibilityRole="button"
-        accessibilityLabel="Add item"
+        accessibilityLabel={t("home.dashboard.add_item")}
       >
         <MaterialCommunityIcons name="plus" color={palette.logoTint} size={28} />
       </Pressable>
