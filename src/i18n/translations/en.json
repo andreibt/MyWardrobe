@@ -26,6 +26,8 @@
   "fridge_list.subtitle": "Keep track of what is available and what should be used soon.",
   "fridge_list.add_button": "+ Add fridge item",
   "fridge_list.add_receipt": "+ Add receipt",
+  "fridge_list.search_placeholder": "Search fridge...",
+  "fridge_list.expiring_alert": "{{count}} items expiring soon",
   "fridge_list.filter_title": "Filter tags",
   "fridge_list.filter_hint": "All items",
   "fridge_list.filter_count": "{{count}} selected",
