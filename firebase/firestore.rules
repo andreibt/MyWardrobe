@@ -52,6 +52,26 @@ service cloud.firestore {
         && request.query.where('ownerId', '==', request.auth.uid);
     }
 
+    match /pantryItems/{itemId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
+    match /cocktailItems/{itemId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
     match /fridgeTags/{tagId} {
       allow create: if request.auth != null
         && request.resource.data.ownerId == request.auth.uid;
@@ -63,6 +83,16 @@ service cloud.firestore {
     }
 
     match /recipes/{recipeId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
+    match /cocktailRecipes/{recipeId} {
       allow create: if request.auth != null
         && request.resource.data.ownerId == request.auth.uid;
       allow read, update, delete: if request.auth != null

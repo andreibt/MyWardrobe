@@ -9,6 +9,11 @@ import {
   subscribeToFridgeItems,
   type FridgeItem,
 } from "../../../src/lib/firestore/fridgeItems";
+import {
+  subscribeToCocktailItems,
+  subscribeToPantryItems,
+  type InventoryItem,
+} from "../../../src/lib/firestore/inventoryItems";
 import { subscribeToTryOnItems, type TryOnItem } from "../../../src/lib/firestore/tryOnList";
 import {
   subscribeToWardrobeCalendarDays,
@@ -40,6 +45,8 @@ export default function HomeScreen() {
   const palette = theme.colors;
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
+  const [pantryItems, setPantryItems] = useState<InventoryItem[]>([]);
+  const [cocktailItems, setCocktailItems] = useState<InventoryItem[]>([]);
   const [calendarDays, setCalendarDays] = useState<WardrobeCalendarDay[]>([]);
   const [tryOnItems, setTryOnItems] = useState<TryOnItem[]>([]);
 
@@ -61,6 +68,22 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!user) {
+      setPantryItems([]);
+      return;
+    }
+    return subscribeToPantryItems(user.id, setPantryItems);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setCocktailItems([]);
+      return;
+    }
+    return subscribeToCocktailItems(user.id, setCocktailItems);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
       setCalendarDays([]);
       return;
     }
@@ -78,6 +101,14 @@ export default function HomeScreen() {
   const activeFridgeItems = useMemo(
     () => fridgeItems.filter((item) => !item.isHistory),
     [fridgeItems]
+  );
+  const activePantryItems = useMemo(
+    () => pantryItems.filter((item) => !item.isHistory),
+    [pantryItems]
+  );
+  const activeCocktailItems = useMemo(
+    () => cocktailItems.filter((item) => !item.isHistory),
+    [cocktailItems]
   );
 
   const expiringCount = useMemo(() => {
@@ -118,7 +149,11 @@ export default function HomeScreen() {
     return [...wardrobeRecent, ...fridgeRecent].slice(0, 3);
   }, [activeFridgeItems, t, wardrobeItems]);
 
-  const totalItems = wardrobeItems.length + activeFridgeItems.length;
+  const totalItems =
+    wardrobeItems.length +
+    activeFridgeItems.length +
+    activePantryItems.length +
+    activeCocktailItems.length;
   const todayKey = formatDateKey(new Date());
   const todayCalendarDay = useMemo(
     () => calendarDays.find((day) => day.date === todayKey),
@@ -221,6 +256,38 @@ export default function HomeScreen() {
                 ? t("home.dashboard.expiring", { count: expiringCount })
                 : t("home.dashboard.browse")}
             </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/(app)/(pantry)/pantry")}
+            style={({ pressed }) => [styles.moduleCard, pressed && styles.cardPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t("tabs.pantry")}
+          >
+            <View style={[styles.moduleIcon, styles.pantryIcon]}>
+              <MaterialCommunityIcons name="food-variant" color={homeColors.pantry} size={22} />
+            </View>
+            <Text style={styles.moduleTitle}>{t("tabs.pantry")}</Text>
+            <Text style={styles.moduleSubtitle}>
+              {t("home.dashboard.active_items", { count: activePantryItems.length })}
+            </Text>
+            <Text style={[styles.moduleLink, styles.pantryText]}>{t("home.dashboard.browse")}</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/(app)/(cocktails)/cocktails")}
+            style={({ pressed }) => [styles.moduleCard, pressed && styles.cardPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t("tabs.cocktails")}
+          >
+            <View style={[styles.moduleIcon, styles.cocktailIcon]}>
+              <MaterialCommunityIcons name="glass-cocktail" color={homeColors.cocktails} size={22} />
+            </View>
+            <Text style={styles.moduleTitle}>{t("tabs.cocktails")}</Text>
+            <Text style={styles.moduleSubtitle}>
+              {t("cocktails.count", { count: activeCocktailItems.length })}
+            </Text>
+            <Text style={styles.moduleLink}>{t("home.dashboard.browse")}</Text>
           </Pressable>
         </View>
 
@@ -400,6 +467,10 @@ function getTagTextStyle(kind: RecentItem["kind"], styles: ReturnType<typeof cre
 const homeColors = {
   secondary: "#00E676",
   secondaryDim: "rgba(0, 230, 118, 0.12)",
+  pantry: "#E8A838",
+  pantryDim: "rgba(232, 168, 56, 0.12)",
+  cocktails: "#3BA4F5",
+  cocktailsDim: "rgba(59, 164, 245, 0.12)",
   warning: "#FFA502",
   warningDim: "rgba(255, 165, 2, 0.12)",
 };
@@ -479,10 +550,11 @@ const createStyles = (theme: AppTheme) => {
     },
     moduleGrid: {
       flexDirection: "row",
+      flexWrap: "wrap",
       gap: spacing.sm,
     },
     moduleCard: {
-      flex: 1,
+      width: "48%",
       minHeight: 150,
       paddingVertical: 20,
       paddingHorizontal: spacing.md,
@@ -509,6 +581,12 @@ const createStyles = (theme: AppTheme) => {
     fridgeIcon: {
       backgroundColor: homeColors.secondaryDim,
     },
+    pantryIcon: {
+      backgroundColor: homeColors.pantryDim,
+    },
+    cocktailIcon: {
+      backgroundColor: homeColors.cocktailsDim,
+    },
     moduleTitle: {
       color: palette.text,
       fontSize: 16,
@@ -530,6 +608,9 @@ const createStyles = (theme: AppTheme) => {
     },
     warningText: {
       color: homeColors.warning,
+    },
+    pantryText: {
+      color: homeColors.pantry,
     },
     sectionLabel: {
       flexDirection: "row",

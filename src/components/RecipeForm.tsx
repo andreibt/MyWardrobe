@@ -5,6 +5,7 @@ import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useI18n } from "../i18n/I18nProvider";
 import { subscribeToFridgeItems, type FridgeItem } from "../lib/firestore/fridgeItems";
 import type { RecipeIngredient } from "../lib/firestore/recipes";
+import type { InventoryItem } from "../lib/firestore/inventoryItems";
 import { useTheme, type AppTheme } from "../providers/ThemeProvider";
 import { spacing, typography } from "../theme/tokens";
 import { RecipeIngredientZone } from "./RecipeIngredientZone";
@@ -22,7 +23,13 @@ type RecipeFormProps = {
   initialValue?: RecipeFormValue;
   submitLabel: string;
   onSubmit: (value: RecipeFormValue) => Promise<void>;
+  subscribeItems?: (ownerId: string, onChange: (items: RecipeInventoryItem[]) => void) => () => void;
+  pickerIcon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  ingredientCurrentLabel?: string;
+  ingredientHistoryLabel?: string;
 };
+
+type RecipeInventoryItem = FridgeItem | InventoryItem;
 
 const EMPTY_VALUE: RecipeFormValue = {
   name: "",
@@ -32,35 +39,44 @@ const EMPTY_VALUE: RecipeFormValue = {
   ingredients: [],
 };
 
-export function RecipeForm({ ownerId, initialValue = EMPTY_VALUE, submitLabel, onSubmit }: RecipeFormProps) {
+export function RecipeForm({
+  ownerId,
+  initialValue = EMPTY_VALUE,
+  submitLabel,
+  onSubmit,
+  subscribeItems = subscribeToFridgeItems,
+  pickerIcon = "fridge-outline",
+  ingredientCurrentLabel,
+  ingredientHistoryLabel,
+}: RecipeFormProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const colors = theme.colors;
   const [value, setValue] = useState(initialValue);
-  const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<RecipeInventoryItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState("");
-  const [infoItem, setInfoItem] = useState<FridgeItem | null>(null);
+  const [infoItem, setInfoItem] = useState<RecipeInventoryItem | null>(null);
   const [ingredientQuantity, setIngredientQuantity] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!ownerId) {
-      setFridgeItems([]);
+      setInventoryItems([]);
       return;
     }
-    return subscribeToFridgeItems(ownerId, setFridgeItems);
-  }, [ownerId]);
+    return subscribeItems(ownerId, setInventoryItems);
+  }, [ownerId, subscribeItems]);
 
   const selectedItem = useMemo(
-    () => fridgeItems.find((item) => item.id === selectedItemId),
-    [fridgeItems, selectedItemId]
+    () => inventoryItems.find((item) => item.id === selectedItemId),
+    [inventoryItems, selectedItemId]
   );
   const availableItems = useMemo(() => {
     const ingredientIds = new Set(value.ingredients.map((ingredient) => ingredient.fridgeItemId));
-    return fridgeItems.filter((item) => !ingredientIds.has(item.id));
-  }, [fridgeItems, value.ingredients]);
+    return inventoryItems.filter((item) => !ingredientIds.has(item.id));
+  }, [inventoryItems, value.ingredients]);
 
   const addIngredient = () => {
     const quantity = Number(ingredientQuantity);
@@ -74,7 +90,7 @@ export function RecipeForm({ ownerId, initialValue = EMPTY_VALUE, submitLabel, o
       quantity,
       quantityType: selectedItem.quantityType,
       description: selectedItem.description,
-      calories: selectedItem.calories,
+      calories: selectedItem.calories ?? 0,
     };
     setValue((current) => ({
       ...current,
@@ -167,7 +183,7 @@ export function RecipeForm({ ownerId, initialValue = EMPTY_VALUE, submitLabel, o
 
         <View style={styles.ingredientPicker}>
           <View style={styles.sectionHeader}>
-            <MaterialCommunityIcons name="fridge-outline" color={colors.primary} size={18} />
+            <MaterialCommunityIcons name={pickerIcon} color={colors.primary} size={18} />
             <Text style={styles.sectionTitle}>{t("recipes.add_ingredient")}</Text>
           </View>
 
@@ -191,7 +207,9 @@ export function RecipeForm({ ownerId, initialValue = EMPTY_VALUE, submitLabel, o
                         {item.name}
                       </Text>
                       <Text style={[styles.itemState, selected && styles.itemTextActive]}>
-                        {item.isHistory ? t("recipes.history") : t("recipes.current")}
+                        {item.isHistory
+                          ? ingredientHistoryLabel ?? t("recipes.history")
+                          : ingredientCurrentLabel ?? t("recipes.current")}
                       </Text>
                     </Pressable>
                     <Pressable
@@ -287,7 +305,7 @@ export function RecipeForm({ ownerId, initialValue = EMPTY_VALUE, submitLabel, o
               </Text>
             ) : null}
             <Text style={styles.modalText}>
-              {t("fridge_card.calories", { calories: infoItem?.calories ?? 0 })}
+                {t("fridge_card.calories", { calories: infoItem?.calories ?? 0 })}
             </Text>
             <Text style={styles.modalText}>
               {infoItem?.isHistory ? t("recipes.ingredient_history") : t("recipes.ingredient_current")}
