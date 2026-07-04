@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { DateInput } from "../../src/components/DateInput";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { restoreFridgeItem } from "../../src/lib/firestore/fridgeItems";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
@@ -31,22 +32,11 @@ export default function RestoreFridgeItemScreen() {
       <Text style={styles.title}>{t("fridge_restore.title")}</Text>
       <Text style={styles.subtitle}>{t("fridge_restore.subtitle", { name: getParam(params.name) })}</Text>
       <Text style={styles.label}>{t("fridge_add.label.expiration_date")}</Text>
-      {Platform.OS === "web" ? (
-        <input
-          type="date"
-          value={expirationDate}
-          onChange={(event) => setExpirationDate(event.target.value)}
-          style={styles.webDateInput}
-        />
-      ) : (
-        <TextInput
-          value={expirationDate}
-          onChangeText={setExpirationDate}
-          placeholder={t("fridge_add.placeholder.expiration_date")}
-          placeholderTextColor={colors.muted}
-          style={styles.input}
-        />
-      )}
+      <DateInput
+        value={expirationDate}
+        onChange={setExpirationDate}
+        placeholder={t("fridge_add.placeholder.expiration_date")}
+      />
       {error ? <Text style={styles.error}>{t(error)}</Text> : null}
       <Pressable onPress={handleRestore} style={styles.restoreButton}>
         <Text style={styles.restoreText}>{t("fridge_restore.button")}</Text>
@@ -63,8 +53,6 @@ const styles = StyleSheet.create({
   title: { color: colors.text, ...typography.h1 },
   subtitle: { color: colors.muted, ...typography.body },
   label: { marginTop: spacing.sm, color: colors.text, ...typography.caption, textTransform: "uppercase" },
-  input: { padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, color: colors.text, backgroundColor: colors.card },
-  webDateInput: { padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, color: colors.text, backgroundColor: colors.card },
   error: { color: colors.danger, ...typography.caption },
   restoreButton: { alignItems: "center", marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.accent },
   restoreText: { color: colors.background, ...typography.h2 },

@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
   View,
 } from "react-native";
 
+import { DateInput } from "../../src/components/DateInput";
 import { FridgeTagSelector } from "../../src/components/FridgeTagSelector";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { sendAssistantPrompt } from "../../src/lib/assistant";
@@ -172,11 +172,11 @@ export default function AddReceiptScreen() {
           <Field label={t("fridge_add.label.calories")} value={draft.calories} onChange={(calories) => setDraft({ ...draft, calories })} numeric />
           <View style={styles.field}>
             <Text style={styles.label}>{t("fridge_add.label.expiration_date")}</Text>
-            {Platform.OS === "web" ? (
-              <input type="date" value={draft.expirationDate} onChange={(event) => setDraft({ ...draft, expirationDate: event.target.value })} style={styles.webDateInput} />
-            ) : (
-              <TextInput value={draft.expirationDate} onChangeText={(expirationDate) => setDraft({ ...draft, expirationDate })} placeholder="YYYY-MM-DD" placeholderTextColor={colors.muted} style={styles.input} />
-            )}
+            <DateInput
+              value={draft.expirationDate}
+              onChange={(expirationDate) => setDraft({ ...draft, expirationDate })}
+              placeholder={t("fridge_add.placeholder.expiration_date")}
+            />
           </View>
           <Field label={t("fridge_add.label.image")} value={draft.imageUrl} onChange={(imageUrl) => setDraft({ ...draft, imageUrl })} />
           <View style={styles.field}>
@@ -247,7 +247,6 @@ const styles = StyleSheet.create({
   input: { padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, color: colors.text, backgroundColor: colors.card },
   inputText: { color: colors.text, ...typography.body },
   option: { padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.card },
-  webDateInput: { padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, color: colors.text, backgroundColor: colors.card },
   saveButton: { alignItems: "center", padding: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.accent },
   saveText: { color: colors.background, ...typography.h2 },
   cancelButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.pill, backgroundColor: colors.card },

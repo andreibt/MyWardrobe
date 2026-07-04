@@ -3,7 +3,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   ActivityIndicator,
@@ -31,6 +31,7 @@ import { QUANTITY_TYPES, type QuantityType } from "../lib/firestore/fridgeItems"
 import { useAuth } from "../providers/AuthProvider";
 import { useTheme, type AppTheme } from "../providers/ThemeProvider";
 import { spacing, typography } from "../theme/tokens";
+import { DateInput } from "./DateInput";
 
 type InventoryItemFormScreenProps = {
   kind: InventoryKind;
@@ -313,26 +314,14 @@ export function InventoryItemFormScreen({
             <Controller
               control={control}
               name="expirationDate"
-              render={({ field: { onBlur, onChange, value } }) =>
-                Platform.OS === "web" ? (
-                  <input
-                    type="date"
-                    value={value}
-                    onBlur={onBlur}
-                    onChange={(event) => onChange(event.target.value)}
-                    style={styles.webDateInput as unknown as CSSProperties}
-                  />
-                ) : (
-                  <TextInput
-                    value={value}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    placeholder={t("fridge_add.placeholder.expiration_date")}
-                    placeholderTextColor={colors.muted}
-                    style={styles.input}
-                  />
-                )
-              }
+              render={({ field: { onBlur, onChange, value } }) => (
+                <DateInput
+                  value={value}
+                  onBlur={onBlur}
+                  onChange={onChange}
+                  placeholder={t("fridge_add.placeholder.expiration_date")}
+                />
+              )}
             />
             {errors.expirationDate?.message ? (
               <Text style={styles.error}>{t(String(errors.expirationDate.message))}</Text>
@@ -505,17 +494,6 @@ const createStyles = (theme: AppTheme, kind: InventoryKind) => {
       lineHeight: 20,
     },
     multilineInput: { minHeight: 96, textAlignVertical: "top" },
-    webDateInput: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      paddingVertical: 12,
-      paddingHorizontal: 14,
-      color: colors.text,
-      backgroundColor: colors.surface,
-      fontSize: 15,
-      lineHeight: 20,
-    },
     dropdownButton: {
       minHeight: 46,
       flexDirection: "row",

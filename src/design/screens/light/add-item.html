@@ -179,6 +179,25 @@
       resize: vertical;
       min-height: 80px;
     }
+    .date-picker-field {
+      width: 100%;
+      min-height: 45px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--muted);
+      font: 400 15px var(--font);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .date-picker-field span:last-child {
+      color: var(--fg);
+      font-size: 18px;
+      line-height: 1;
+    }
 
     /* ---- inline row ---- */
     .form-row {
@@ -357,11 +376,15 @@
           <div class="form-row">
             <div class="form-group">
               <label for="purchaseDate">Purchase date</label>
-              <input type="date" id="purchaseDate" />
+              <button class="date-picker-field" id="purchaseDate" type="button">
+                <span>YYYY-MM-DD</span><span>&#128197;</span>
+              </button>
             </div>
             <div class="form-group">
               <label for="expiryDate">Expiry date</label>
-              <input type="date" id="expiryDate" />
+              <button class="date-picker-field" id="expiryDate" type="button">
+                <span>YYYY-MM-DD</span><span>&#128197;</span>
+              </button>
             </div>
           </div>
         </div>
