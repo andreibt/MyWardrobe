@@ -30,6 +30,7 @@ export function FridgeCard({
   const colors = theme.colors;
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const imageUri = item.imageSerialized || item.imageUrl;
+  const isItemExpired = !isHistory && isExpired(item.expirationDate);
 
   return (
     <View style={[styles.card, compact && styles.compactCard]}>
@@ -100,8 +101,12 @@ export function FridgeCard({
           </View>
           {!isHistory ? (
             <View style={styles.metaItem}>
-              <MaterialCommunityIcons name="calendar-clock" color={colors.textMuted} size={14} />
-              <Text style={styles.metaText} numberOfLines={1}>
+              <MaterialCommunityIcons
+                name="calendar-clock"
+                color={isItemExpired ? colors.danger : colors.textMuted}
+                size={14}
+              />
+              <Text style={[styles.metaText, isItemExpired && styles.expiredText]} numberOfLines={1}>
                 {t("fridge_card.expiration", { date: item.expirationDate })}
               </Text>
             </View>
@@ -150,6 +155,17 @@ export function FridgeCard({
       </View>
     </View>
   );
+}
+
+function isExpired(expirationDate: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiration = new Date(`${expirationDate}T00:00:00`);
+  if (Number.isNaN(expiration.getTime())) {
+    return false;
+  }
+  expiration.setHours(0, 0, 0, 0);
+  return expiration < today;
 }
 
 const createStyles = (theme: AppTheme) => {
@@ -286,6 +302,10 @@ const createStyles = (theme: AppTheme) => {
       flex: 1,
       color: colors.textMuted,
       ...typography.caption,
+    },
+    expiredText: {
+      color: colors.danger,
+      fontWeight: "700",
     },
     actions: {
       marginTop: 2,

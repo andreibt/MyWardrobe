@@ -35,6 +35,15 @@ type RecentItem = {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 };
 
+type ExpiringHomeItem = {
+  id: string;
+  name: string;
+  meta: string;
+  location: "fridge" | "pantry";
+  daysUntilExpiration: number;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useI18n();
@@ -111,21 +120,27 @@ export default function HomeScreen() {
     [cocktailItems]
   );
 
-  const expiringCount = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const soon = new Date(today);
-    soon.setDate(today.getDate() + 3);
+  const allExpiringHomeItems = useMemo<ExpiringHomeItem[]>(() => {
+    const fridgeExpiring = activeFridgeItems
+      .map((item) => toExpiringHomeItem(item, "fridge", t))
+      .filter((item): item is ExpiringHomeItem => Boolean(item));
+    const pantryExpiring = activePantryItems
+      .map((item) => toExpiringHomeItem(item, "pantry", t))
+      .filter((item): item is ExpiringHomeItem => Boolean(item));
 
-    return activeFridgeItems.filter((item) => {
-      const expiry = new Date(item.expirationDate);
-      if (Number.isNaN(expiry.getTime())) {
-        return false;
-      }
-      expiry.setHours(0, 0, 0, 0);
-      return expiry >= today && expiry <= soon;
-    }).length;
-  }, [activeFridgeItems]);
+    return [...fridgeExpiring, ...pantryExpiring]
+      .sort((a, b) => a.daysUntilExpiration - b.daysUntilExpiration);
+  }, [activeFridgeItems, activePantryItems, t]);
+  const expiringHomeItems = allExpiringHomeItems.slice(0, 4);
+  const expiringCount = allExpiringHomeItems.length;
+  const fridgeExpiringCount = useMemo(
+    () => activeFridgeItems.filter((item) => isExpiringSoon(item.expirationDate)).length,
+    [activeFridgeItems]
+  );
+  const pantryExpiringCount = useMemo(
+    () => activePantryItems.filter((item) => isExpiringSoon(item.expirationDate)).length,
+    [activePantryItems]
+  );
 
   const recentItems = useMemo<RecentItem[]>(() => {
     const wardrobeRecent = wardrobeItems.slice(0, 2).map((item) => ({
@@ -251,9 +266,9 @@ export default function HomeScreen() {
             <Text style={styles.moduleSubtitle}>
               {t("home.dashboard.active_items", { count: activeFridgeItems.length })}
             </Text>
-            <Text style={[styles.moduleLink, expiringCount > 0 && styles.warningText]}>
-              {expiringCount > 0
-                ? t("home.dashboard.expiring", { count: expiringCount })
+            <Text style={[styles.moduleLink, fridgeExpiringCount > 0 && styles.warningText]}>
+              {fridgeExpiringCount > 0
+                ? t("home.dashboard.expiring", { count: fridgeExpiringCount })
                 : t("home.dashboard.browse")}
             </Text>
           </Pressable>
@@ -271,7 +286,11 @@ export default function HomeScreen() {
             <Text style={styles.moduleSubtitle}>
               {t("home.dashboard.active_items", { count: activePantryItems.length })}
             </Text>
-            <Text style={[styles.moduleLink, styles.pantryText]}>{t("home.dashboard.browse")}</Text>
+            <Text style={[styles.moduleLink, pantryExpiringCount > 0 ? styles.warningText : styles.pantryText]}>
+              {pantryExpiringCount > 0
+                ? t("home.dashboard.expiring", { count: pantryExpiringCount })
+                : t("home.dashboard.browse")}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -289,6 +308,66 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.moduleLink}>{t("home.dashboard.browse")}</Text>
           </Pressable>
+        </View>
+
+        <View>
+          <View style={styles.sectionLabel}>
+            <Text style={styles.sectionTitle}>{t("home.dashboard.expiring_soon_title")}</Text>
+            <Text style={styles.sectionAction}>
+              {t("home.dashboard.expiring_soon_count", { count: expiringCount })}
+            </Text>
+          </View>
+
+          <View style={styles.recentList}>
+            {expiringHomeItems.length > 0 ? (
+              expiringHomeItems.map((item) => (
+                <Pressable
+                  key={item.id}
+                  onPress={() =>
+                    router.push({
+                      pathname:
+                        item.location === "fridge"
+                          ? "/(app)/(fridge)/fridge-list"
+                          : "/(app)/(pantry)/pantry",
+                      params: { expirationFilter: "soon" },
+                    })
+                  }
+                  style={({ pressed }) => [styles.expiringItem, pressed && styles.cardPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.name}
+                >
+                  <View style={styles.recentIcon}>
+                    <MaterialCommunityIcons name={item.icon} color={palette.muted} size={22} />
+                  </View>
+                  <View style={styles.recentInfo}>
+                    <Text style={styles.recentName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.recentMeta} numberOfLines={1}>
+                      {item.meta}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.expiringBadge,
+                      item.daysUntilExpiration <= 1 && styles.expiringBadgeCritical,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.expiringBadgeText,
+                        item.daysUntilExpiration <= 1 && styles.expiringBadgeCriticalText,
+                      ]}
+                    >
+                      {formatExpiryBadge(item.daysUntilExpiration, t)}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.emptyListText}>{t("home.dashboard.no_expiring")}</Text>
+            )}
+          </View>
         </View>
 
         <View>
@@ -417,16 +496,50 @@ function StatCard({
 }
 
 function isExpiringSoon(expirationDate: string) {
+  const days = getDaysUntilExpiration(expirationDate);
+  return days !== null && days >= 0 && days <= 3;
+}
+
+function getDaysUntilExpiration(expirationDate: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const soon = new Date(today);
-  soon.setDate(today.getDate() + 3);
-  const expiry = new Date(expirationDate);
+  const expiry = new Date(`${expirationDate}T00:00:00`);
   if (Number.isNaN(expiry.getTime())) {
-    return false;
+    return null;
   }
   expiry.setHours(0, 0, 0, 0);
-  return expiry >= today && expiry <= soon;
+  return Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
+}
+
+function toExpiringHomeItem(
+  item: FridgeItem | InventoryItem,
+  location: "fridge" | "pantry",
+  t: ReturnType<typeof useI18n>["t"]
+): ExpiringHomeItem | null {
+  const daysUntilExpiration = getDaysUntilExpiration(item.expirationDate);
+  if (daysUntilExpiration === null || daysUntilExpiration < 0 || daysUntilExpiration > 3) {
+    return null;
+  }
+  return {
+    id: `${location}-${item.id}`,
+    name: item.name,
+    meta: `${item.quantity}${item.quantityType} · ${
+      location === "fridge" ? t("home.dashboard.meta_fridge") : t("home.dashboard.meta_pantry")
+    }`,
+    location,
+    daysUntilExpiration,
+    icon: location === "fridge" ? "fridge-outline" : "food-variant",
+  };
+}
+
+function formatExpiryBadge(daysUntilExpiration: number, t: ReturnType<typeof useI18n>["t"]) {
+  if (daysUntilExpiration === 0) {
+    return t("home.dashboard.expiring_today");
+  }
+  if (daysUntilExpiration === 1) {
+    return t("home.dashboard.expiring_tomorrow");
+  }
+  return t("home.dashboard.expiring_days", { count: daysUntilExpiration });
 }
 
 function formatDateKey(date: Date) {
@@ -473,6 +586,7 @@ const homeColors = {
   cocktailsDim: "rgba(59, 164, 245, 0.12)",
   warning: "#FFA502",
   warningDim: "rgba(255, 165, 2, 0.12)",
+  danger: "#FF4757",
 };
 
 const createStyles = (theme: AppTheme) => {
@@ -644,6 +758,18 @@ const createStyles = (theme: AppTheme) => {
       borderColor: palette.border,
       backgroundColor: palette.surface2,
     },
+    expiringItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      minHeight: 66,
+      paddingVertical: 10,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: palette.surface2,
+    },
     todayCalendarCard: {
       gap: spacing.sm,
       paddingVertical: 10,
@@ -731,6 +857,27 @@ const createStyles = (theme: AppTheme) => {
     },
     warningTagText: {
       color: homeColors.warning,
+    },
+    expiringBadge: {
+      flexShrink: 0,
+      paddingVertical: 3,
+      paddingHorizontal: 10,
+      borderRadius: 999,
+      backgroundColor: homeColors.warningDim,
+    },
+    expiringBadgeCritical: {
+      backgroundColor: "rgba(255, 71, 87, 0.12)",
+    },
+    expiringBadgeText: {
+      color: homeColors.warning,
+      fontSize: 10,
+      lineHeight: 14,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    expiringBadgeCriticalText: {
+      color: homeColors.danger,
     },
     emptyListText: {
       color: palette.textMuted,

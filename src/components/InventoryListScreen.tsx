@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +19,7 @@ import { InventoryCard } from "./InventoryCard";
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
 type ViewMode = "list" | "grid";
 type InventoryMode = "active" | "history";
+type ExpirationFilter = "all" | "expired" | "soon";
 
 type InventoryCopy = {
   title: string;
@@ -49,9 +50,11 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
   const { user } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
+  const params = useLocalSearchParams<{ expirationFilter?: ExpirationFilter }>();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, kind), [kind, theme]);
   const colors = theme.colors;
+  const accentColor = moduleAccent(kind);
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,8 +63,20 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
   const [pageSize, setPageSize] = useState(5);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [inventoryMode, setInventoryMode] = useState<InventoryMode>("active");
+  const [expirationFilter, setExpirationFilter] = useState<ExpirationFilter>("all");
   const isGridView = viewMode === "grid";
   const isHistoryView = inventoryMode === "history";
+  const showsExpirationAlerts = kind === "pantry";
+
+  useEffect(() => {
+    if (
+      showsExpirationAlerts &&
+      (params.expirationFilter === "expired" || params.expirationFilter === "soon")
+    ) {
+      setInventoryMode("active");
+      setExpirationFilter(params.expirationFilter);
+    }
+  }, [params.expirationFilter, showsExpirationAlerts]);
 
   useEffect(() => {
     if (!user) {
@@ -93,11 +108,30 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
         item.description.toLowerCase().includes(normalizedQuery) ||
         item.quantityType.toLowerCase().includes(normalizedQuery) ||
         item.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
-      return matchesTags && matchesSearch;
+      const matchesExpiration =
+        !showsExpirationAlerts ||
+        expirationFilter === "all" ||
+        (expirationFilter === "expired" && isExpired(item.expirationDate)) ||
+        (expirationFilter === "soon" && isExpiringSoon(item.expirationDate));
+      return matchesTags && matchesSearch && matchesExpiration;
     });
-  }, [isHistoryView, items, searchQuery, tagFilters]);
+  }, [expirationFilter, isHistoryView, items, searchQuery, showsExpirationAlerts, tagFilters]);
 
   const activeCount = useMemo(() => items.filter((item) => !item.isHistory).length, [items]);
+  const expiredCount = useMemo(
+    () =>
+      showsExpirationAlerts
+        ? items.filter((item) => !item.isHistory && isExpired(item.expirationDate)).length
+        : 0,
+    [items, showsExpirationAlerts]
+  );
+  const expiringCount = useMemo(
+    () =>
+      showsExpirationAlerts
+        ? items.filter((item) => !item.isHistory && isExpiringSoon(item.expirationDate)).length
+        : 0,
+    [items, showsExpirationAlerts]
+  );
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const paginatedItems = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -106,7 +140,7 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [inventoryMode, pageSize, searchQuery, tagFilters]);
+  }, [expirationFilter, inventoryMode, pageSize, searchQuery, tagFilters]);
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -116,6 +150,11 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
     setTagFilters((current) =>
       current.includes(tag) ? current.filter((entry) => entry !== tag) : [...current, tag]
     );
+  };
+
+  const clearFilters = () => {
+    setTagFilters([]);
+    setExpirationFilter("all");
   };
 
   const confirmArchive = (itemId: string) => {
@@ -158,6 +197,43 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
               </View>
             </View>
 
+            {expiredCount > 0 && !isHistoryView ? (
+              <Pressable
+                onPress={() => setExpirationFilter((current) => (current === "expired" ? "all" : "expired"))}
+                style={({ pressed }) => [
+                  styles.alertBanner,
+                  styles.expiredBanner,
+                  expirationFilter === "expired" && styles.expiredBannerActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("fridge_list.expired_alert", { count: expiredCount })}
+              >
+                <MaterialCommunityIcons name="alert-circle-outline" color={colors.danger} size={18} />
+                <Text style={[styles.alertText, styles.expiredText]}>
+                  {t("fridge_list.expired_alert", { count: expiredCount })}
+                </Text>
+              </Pressable>
+            ) : null}
+
+            {expiringCount > 0 && !isHistoryView ? (
+              <Pressable
+                onPress={() => setExpirationFilter((current) => (current === "soon" ? "all" : "soon"))}
+                style={({ pressed }) => [
+                  styles.alertBanner,
+                  expirationFilter === "soon" && styles.alertBannerActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("fridge_list.expiring_alert", { count: expiringCount })}
+              >
+                <MaterialCommunityIcons name="timer-sand" color={accentColor} size={18} />
+                <Text style={styles.alertText}>
+                  {t("fridge_list.expiring_alert", { count: expiringCount })}
+                </Text>
+              </Pressable>
+            ) : null}
+
             <View style={styles.searchBar}>
               <MaterialCommunityIcons name="magnify" color={colors.muted} size={18} />
               <TextInput
@@ -190,7 +266,10 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
                 </Text>
               </Pressable>
               <Pressable
-                onPress={() => setInventoryMode("history")}
+                onPress={() => {
+                  setInventoryMode("history");
+                  setExpirationFilter("all");
+                }}
                 style={[styles.segmentButton, isHistoryView && styles.segmentButtonActive]}
               >
                 <Text style={[styles.segmentText, isHistoryView && styles.segmentTextActive]}>
@@ -253,9 +332,9 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
                 </Pressable>
               </View>
 
-              {tagFilters.length > 0 ? (
+              {tagFilters.length > 0 || expirationFilter !== "all" ? (
                 <Pressable
-                  onPress={() => setTagFilters([])}
+                  onPress={clearFilters}
                   style={({ pressed }) => [styles.clearButton, pressed && styles.buttonPressed]}
                 >
                   <Text style={styles.clearButtonText}>{t("fridge_list.filter_clear")}</Text>
@@ -310,14 +389,14 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
             <Text style={styles.emptyTitle}>
               {isLoading
                 ? t("fridge_list.empty_loading")
-                : tagFilters.length > 0 || searchQuery
+                : tagFilters.length > 0 || searchQuery || expirationFilter !== "all"
                   ? copy.emptyFiltered
                   : isHistoryView
                     ? copy.emptyHistory
                     : copy.empty}
             </Text>
             <Text style={styles.emptySubtitle}>
-              {tagFilters.length > 0 || searchQuery
+              {tagFilters.length > 0 || searchQuery || expirationFilter !== "all"
                 ? t("wardrobe_list.empty_filtered_subtitle")
                 : copy.emptySubtitle}
             </Text>
@@ -395,6 +474,27 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
   );
 }
 
+function getDaysUntilExpiration(expirationDate: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiration = new Date(`${expirationDate}T00:00:00`);
+  if (Number.isNaN(expiration.getTime())) {
+    return null;
+  }
+  expiration.setHours(0, 0, 0, 0);
+  return Math.ceil((expiration.getTime() - today.getTime()) / 86400000);
+}
+
+function isExpired(expirationDate: string) {
+  const days = getDaysUntilExpiration(expirationDate);
+  return days !== null && days < 0;
+}
+
+function isExpiringSoon(expirationDate: string) {
+  const days = getDaysUntilExpiration(expirationDate);
+  return days !== null && days >= 0 && days <= 3;
+}
+
 const moduleAccent = (kind: InventoryKind) => (kind === "pantry" ? "#E8A838" : "#3BA4F5");
 
 const createStyles = (theme: AppTheme, kind: InventoryKind) => {
@@ -410,6 +510,40 @@ const createStyles = (theme: AppTheme, kind: InventoryKind) => {
     titleBlock: { flex: 1 },
     title: { color: colors.text, fontSize: 26, lineHeight: 32, fontWeight: "700" },
     count: { color: colors.textMuted, fontSize: 14, lineHeight: 20, fontWeight: "500" },
+    alertBanner: {
+      minHeight: 44,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.md,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: kind === "pantry" ? "rgba(232, 168, 56, 0.3)" : "rgba(59, 164, 245, 0.3)",
+      backgroundColor: accentDim,
+    },
+    alertBannerActive: {
+      borderColor: accent,
+      backgroundColor: kind === "pantry" ? "rgba(232, 168, 56, 0.18)" : "rgba(59, 164, 245, 0.18)",
+    },
+    expiredBanner: {
+      borderColor: theme.isDark ? "rgba(255, 71, 87, 0.32)" : "#F5B5BC",
+      backgroundColor: theme.isDark ? "rgba(255, 71, 87, 0.12)" : "#FFF1F2",
+    },
+    expiredBannerActive: {
+      borderColor: colors.danger,
+      backgroundColor: theme.isDark ? "rgba(255, 71, 87, 0.2)" : "#FFE4E6",
+    },
+    alertText: {
+      flex: 1,
+      color: accent,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
+    },
+    expiredText: {
+      color: colors.danger,
+    },
     searchBar: {
       minHeight: 44,
       flexDirection: "row",

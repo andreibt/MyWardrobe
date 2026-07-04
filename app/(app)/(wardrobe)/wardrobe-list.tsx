@@ -32,6 +32,8 @@ import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
 import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
 import { spacing, typography } from "../../../src/theme/tokens";
 
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
+
 export default function WardrobeListScreen() {
   const { user } = useAuth();
   const router = useRouter();
@@ -47,6 +49,8 @@ export default function WardrobeListScreen() {
   const [tags, setTags] = useState<WardrobeTag[]>([]);
   const [tryOnItems, setTryOnItems] = useState<TryOnItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   useEffect(() => {
     if (!user) {
@@ -100,6 +104,20 @@ export default function WardrobeListScreen() {
     });
   }, [items, searchQuery, tagFilters]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [currentPage, filteredItems, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize, searchQuery, tagFilters]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+
   const toggleFilter = (tag: string) => {
     setTagFilters((current) =>
       current.includes(tag) ? current.filter((value) => value !== tag) : [...current, tag]
@@ -143,7 +161,7 @@ export default function WardrobeListScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={filteredItems}
+        data={paginatedItems}
         numColumns={2}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
@@ -248,6 +266,58 @@ export default function WardrobeListScreen() {
                 : t("wardrobe_list.empty_subtitle")}
             </Text>
           </View>
+        }
+        ListFooterComponent={
+          filteredItems.length > 0 ? (
+            <View style={styles.pagination}>
+              <Text style={styles.paginationLabel}>{t("wardrobe_list.page_size")}</Text>
+              <View style={styles.pageSizeOptions}>
+                {PAGE_SIZE_OPTIONS.map((option) => {
+                  const selected = pageSize === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setPageSize(option)}
+                      style={[styles.pageSizeButton, selected && styles.pageSizeButtonActive]}
+                    >
+                      <Text style={[styles.pageSizeText, selected && styles.pageSizeTextActive]}>
+                        {option}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View style={styles.pageControls}>
+                <Pressable
+                  disabled={currentPage === 1}
+                  onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  style={({ pressed }) => [
+                    styles.pageButton,
+                    (currentPage === 1 || pressed) && styles.buttonPressed,
+                    currentPage === 1 && styles.disabled,
+                  ]}
+                >
+                  <MaterialCommunityIcons name="chevron-left" color={colors.primary} size={18} />
+                  <Text style={styles.pageButtonText}>{t("wardrobe_list.page_previous")}</Text>
+                </Pressable>
+                <Text style={styles.pageStatus}>
+                  {t("wardrobe_list.page_status", { page: currentPage, total: totalPages })}
+                </Text>
+                <Pressable
+                  disabled={currentPage === totalPages}
+                  onPress={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  style={({ pressed }) => [
+                    styles.pageButton,
+                    (currentPage === totalPages || pressed) && styles.buttonPressed,
+                    currentPage === totalPages && styles.disabled,
+                  ]}
+                >
+                  <Text style={styles.pageButtonText}>{t("wardrobe_list.page_next")}</Text>
+                  <MaterialCommunityIcons name="chevron-right" color={colors.primary} size={18} />
+                </Pressable>
+              </View>
+            </View>
+          ) : null
         }
       />
 
@@ -389,6 +459,73 @@ const createStyles = (theme: AppTheme) => {
       ...typography.body,
       textAlign: "center",
     },
+    pagination: {
+      gap: spacing.sm,
+      marginTop: spacing.lg,
+      paddingTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    paginationLabel: {
+      color: colors.textMuted,
+      ...typography.caption,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      fontWeight: "600",
+    },
+    pageSizeOptions: {
+      flexDirection: "row",
+      gap: spacing.xs,
+    },
+    pageSizeButton: {
+      minWidth: 44,
+      minHeight: 36,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    pageSizeButtonActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary,
+    },
+    pageSizeText: {
+      color: colors.textMuted,
+      ...typography.caption,
+      fontWeight: "700",
+    },
+    pageSizeTextActive: {
+      color: colors.logoTint,
+    },
+    pageControls: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    pageButton: {
+      minHeight: 38,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 2,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 19,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    pageButtonText: {
+      color: colors.primary,
+      ...typography.caption,
+      fontWeight: "700",
+    },
+    pageStatus: {
+      flex: 1,
+      color: colors.textMuted,
+      textAlign: "center",
+      ...typography.caption,
+    },
     fab: {
       position: "absolute",
       right: 20,
@@ -410,6 +547,9 @@ const createStyles = (theme: AppTheme) => {
     },
     buttonPressed: {
       opacity: 0.85,
+    },
+    disabled: {
+      opacity: 0.45,
     },
   });
 };

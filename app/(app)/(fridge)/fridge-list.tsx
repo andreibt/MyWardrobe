@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -31,6 +31,7 @@ import { spacing, typography } from "../../../src/theme/tokens";
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
 type ViewMode = "list" | "grid";
 type InventoryMode = "active" | "history";
+type ExpirationFilter = "all" | "expired" | "soon";
 type FilterChip = { id: string; name: string; isAll?: boolean };
 
 export default function FridgeListScreen() {
@@ -38,6 +39,7 @@ export default function FridgeListScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
+  const params = useLocalSearchParams<{ expirationFilter?: ExpirationFilter }>();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const colors = theme.colors;
@@ -50,8 +52,16 @@ export default function FridgeListScreen() {
   const [pageSize, setPageSize] = useState(5);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [inventoryMode, setInventoryMode] = useState<InventoryMode>("active");
+  const [expirationFilter, setExpirationFilter] = useState<ExpirationFilter>("all");
   const isGridView = viewMode === "grid";
   const isHistoryView = inventoryMode === "history";
+
+  useEffect(() => {
+    if (params.expirationFilter === "expired" || params.expirationFilter === "soon") {
+      setInventoryMode("active");
+      setExpirationFilter(params.expirationFilter);
+    }
+  }, [params.expirationFilter]);
 
   useEffect(() => {
     if (!user) {
@@ -85,24 +95,23 @@ export default function FridgeListScreen() {
         item.description.toLowerCase().includes(normalizedQuery) ||
         item.quantityType.toLowerCase().includes(normalizedQuery) ||
         item.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
-      return matchesTags && matchesSearch;
+      const matchesExpiration =
+        expirationFilter === "all" ||
+        (expirationFilter === "expired" && isExpired(item.expirationDate)) ||
+        (expirationFilter === "soon" && isExpiringSoon(item.expirationDate));
+      return matchesTags && matchesSearch && matchesExpiration;
     });
-  }, [isHistoryView, items, searchQuery, tagFilters]);
+  }, [expirationFilter, isHistoryView, items, searchQuery, tagFilters]);
 
   const activeCount = useMemo(() => items.filter((item) => !item.isHistory).length, [items]);
-  const expiringCount = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const soon = new Date(today);
-    soon.setDate(soon.getDate() + 3);
-    return items.filter((item) => {
-      if (item.isHistory) {
-        return false;
-      }
-      const expiration = new Date(`${item.expirationDate}T00:00:00`);
-      return !Number.isNaN(expiration.getTime()) && expiration >= today && expiration <= soon;
-    }).length;
-  }, [items]);
+  const expiredCount = useMemo(
+    () => items.filter((item) => !item.isHistory && isExpired(item.expirationDate)).length,
+    [items]
+  );
+  const expiringCount = useMemo(
+    () => items.filter((item) => !item.isHistory && isExpiringSoon(item.expirationDate)).length,
+    [items]
+  );
 
   const filterChips = useMemo<FilterChip[]>(
     () => [{ id: "all", name: t("fridge_list.filter_hint"), isAll: true }, ...tags],
@@ -117,7 +126,7 @@ export default function FridgeListScreen() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [inventoryMode, pageSize, searchQuery, tagFilters]);
+  }, [expirationFilter, inventoryMode, pageSize, searchQuery, tagFilters]);
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -127,6 +136,11 @@ export default function FridgeListScreen() {
     setTagFilters((current) =>
       current.includes(tag) ? current.filter((entry) => entry !== tag) : [...current, tag]
     );
+  };
+
+  const clearFilters = () => {
+    setTagFilters([]);
+    setExpirationFilter("all");
   };
 
   const confirmArchive = (itemId: string) => {
@@ -177,13 +191,41 @@ export default function FridgeListScreen() {
               </Pressable>
             </View>
 
+            {expiredCount > 0 && !isHistoryView ? (
+              <Pressable
+                onPress={() => setExpirationFilter((current) => (current === "expired" ? "all" : "expired"))}
+                style={({ pressed }) => [
+                  styles.alertBanner,
+                  styles.expiredBanner,
+                  expirationFilter === "expired" && styles.expiredBannerActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("fridge_list.expired_alert", { count: expiredCount })}
+              >
+                <MaterialCommunityIcons name="alert-circle-outline" color={colors.danger} size={18} />
+                <Text style={[styles.alertText, styles.expiredText]}>
+                  {t("fridge_list.expired_alert", { count: expiredCount })}
+                </Text>
+              </Pressable>
+            ) : null}
+
             {expiringCount > 0 && !isHistoryView ? (
-              <View style={styles.alertBanner}>
+              <Pressable
+                onPress={() => setExpirationFilter((current) => (current === "soon" ? "all" : "soon"))}
+                style={({ pressed }) => [
+                  styles.alertBanner,
+                  expirationFilter === "soon" && styles.alertBannerActive,
+                  pressed && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("fridge_list.expiring_alert", { count: expiringCount })}
+              >
                 <MaterialCommunityIcons name="timer-sand" color={colors.accent} size={18} />
                 <Text style={styles.alertText}>
                   {t("fridge_list.expiring_alert", { count: expiringCount })}
                 </Text>
-              </View>
+              </Pressable>
             ) : null}
 
             <View style={styles.searchBar}>
@@ -218,7 +260,10 @@ export default function FridgeListScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                onPress={() => setInventoryMode("history")}
+                onPress={() => {
+                  setInventoryMode("history");
+                  setExpirationFilter("all");
+                }}
                 style={[styles.segmentButton, isHistoryView && styles.segmentButtonActive]}
               >
                 <Text style={[styles.segmentText, isHistoryView && styles.segmentTextActive]}>
@@ -281,9 +326,9 @@ export default function FridgeListScreen() {
                 </Pressable>
               </View>
 
-              {tagFilters.length > 0 ? (
+              {tagFilters.length > 0 || expirationFilter !== "all" ? (
                 <Pressable
-                  onPress={() => setTagFilters([])}
+                  onPress={clearFilters}
                   style={({ pressed }) => [styles.clearButton, pressed && styles.buttonPressed]}
                 >
                   <Text style={styles.clearButtonText}>{t("fridge_list.filter_clear")}</Text>
@@ -337,14 +382,14 @@ export default function FridgeListScreen() {
             <Text style={styles.emptyTitle}>
               {isLoading
                 ? t("fridge_list.empty_loading")
-                : tagFilters.length > 0 || searchQuery
+                : tagFilters.length > 0 || searchQuery || expirationFilter !== "all"
                   ? t("fridge_list.empty_filtered")
                   : isHistoryView
                     ? t("fridge_list.empty_history")
                     : t("fridge_list.empty")}
             </Text>
             <Text style={styles.emptySubtitle}>
-              {tagFilters.length > 0 || searchQuery
+              {tagFilters.length > 0 || searchQuery || expirationFilter !== "all"
                 ? t("wardrobe_list.empty_filtered_subtitle")
                 : t("home.dashboard.organized_body")}
             </Text>
@@ -422,6 +467,27 @@ export default function FridgeListScreen() {
   );
 }
 
+function getDaysUntilExpiration(expirationDate: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiration = new Date(`${expirationDate}T00:00:00`);
+  if (Number.isNaN(expiration.getTime())) {
+    return null;
+  }
+  expiration.setHours(0, 0, 0, 0);
+  return Math.ceil((expiration.getTime() - today.getTime()) / 86400000);
+}
+
+function isExpired(expirationDate: string) {
+  const days = getDaysUntilExpiration(expirationDate);
+  return days !== null && days < 0;
+}
+
+function isExpiringSoon(expirationDate: string) {
+  const days = getDaysUntilExpiration(expirationDate);
+  return days !== null && days >= 0 && days <= 3;
+}
+
 const createStyles = (theme: AppTheme) => {
   const colors = theme.colors;
   const primaryDim = theme.isDark ? "rgba(0, 212, 255, 0.15)" : "rgba(22, 27, 34, 0.08)";
@@ -481,12 +547,27 @@ const createStyles = (theme: AppTheme) => {
       borderColor: theme.isDark ? "rgba(0, 230, 118, 0.26)" : "#B7E8C8",
       backgroundColor: theme.isDark ? "rgba(0, 230, 118, 0.1)" : "#F6FFED",
     },
+    alertBannerActive: {
+      borderColor: colors.accent,
+      backgroundColor: theme.isDark ? "rgba(0, 230, 118, 0.18)" : "#E9FFE2",
+    },
+    expiredBanner: {
+      borderColor: theme.isDark ? "rgba(255, 71, 87, 0.32)" : "#F5B5BC",
+      backgroundColor: theme.isDark ? "rgba(255, 71, 87, 0.12)" : "#FFF1F2",
+    },
+    expiredBannerActive: {
+      borderColor: colors.danger,
+      backgroundColor: theme.isDark ? "rgba(255, 71, 87, 0.2)" : "#FFE4E6",
+    },
     alertText: {
       flex: 1,
       color: colors.accent,
       fontSize: 13,
       lineHeight: 18,
       fontWeight: "700",
+    },
+    expiredText: {
+      color: colors.danger,
     },
     searchBar: {
       minHeight: 44,

@@ -257,6 +257,19 @@
       background: rgba(22,27,34,0.08);
       color: var(--accent);
     }
+    .ri-tag.critical-tag {
+      background: rgba(245,106,106,0.10);
+      color: #F56A6A;
+    }
+    .expiring-list { display:flex; flex-direction:column; gap:8px; }
+    .expiring-item { display:flex; align-items:center; gap:12px; background:var(--surface); border-radius:var(--radius); padding:10px 12px; border:1px solid var(--border); }
+    .expiring-item .ei-img { width:44px;height:44px; border-radius:6px; background:var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--muted); }
+    .expiring-item .ei-info { flex:1; min-width:0; }
+    .expiring-item .ei-name { font-weight:600; font-size:14px; }
+    .expiring-item .ei-meta { font-size:12px; color:var(--muted); }
+    .expiring-item .ei-badge { font-size:10px; font-weight:700; padding:3px 10px; border-radius:999px; flex-shrink:0; text-transform:uppercase; letter-spacing:0.04em; }
+    .ei-badge.soon { background:rgba(245,165,2,0.10); color:#F2C94C; }
+    .ei-badge.today { background:rgba(245,106,106,0.10); color:#F56A6A; }
 
     /* ---- empty state ---- */
     .empty-state {
@@ -403,12 +416,37 @@
           <div class="mc-sub">28 items &middot; 4 categories</div>
           <div class="mc-count">Browse &rarr;</div>
         </a>
-        <a class="module-card" href="../../fridge.html">
+        <a class="module-card" href="fridge.html">
           <div class="mc-icon fridge">&#9733;</div>
           <div class="mc-title">Fridge</div>
           <div class="mc-sub">14 items &middot; 3 expiring</div>
           <div class="mc-count">3 expiring &rarr;</div>
         </a>
+      </div>
+
+      <!-- expiring soon -->
+      <div>
+        <div class="section-label">
+          <h2>Expiring soon</h2>
+          <a href="#">3 items</a>
+        </div>
+        <div class="expiring-list">
+          <div class="expiring-item">
+            <div class="ei-img">&#127855;</div>
+            <div class="ei-info"><div class="ei-name">Greek Yogurt</div><div class="ei-meta">500g &middot; Dairy &middot; Fridge</div></div>
+            <span class="ei-badge today">Tomorrow</span>
+          </div>
+          <div class="expiring-item">
+            <div class="ei-img">&#129364;</div>
+            <div class="ei-info"><div class="ei-name">Almond Milk</div><div class="ei-meta">1L &middot; Dairy &middot; Fridge</div></div>
+            <span class="ei-badge soon">3 days</span>
+          </div>
+          <div class="expiring-item">
+            <div class="ei-img">&#127837;</div>
+            <div class="ei-info"><div class="ei-name">Sourdough Bread</div><div class="ei-meta">1 loaf &middot; Pantry</div></div>
+            <span class="ei-badge soon">4 days</span>
+          </div>
+        </div>
       </div>
 
       <!-- recent activity -->
@@ -471,7 +509,7 @@
         <span class="tab-icon">&#9825;</span>
         <span>Wardrobe</span>
       </a>
-      <a class="tab-item" href="../../fridge.html">
+      <a class="tab-item" href="fridge.html">
         <span class="tab-icon">&#9733;</span>
         <span>Fridge</span>
       </a>
@@ -485,7 +523,7 @@
       </a>
     </nav>
 
-    <a class="fab" href="../../add-item.html" aria-label="Add item">+</a>
+    <a class="fab" href="../../../../../../../../../../Workspace/NestProject/src/design/screens/light/add-item.html" aria-label="Add item">+</a>
 
   </div>
 </body>

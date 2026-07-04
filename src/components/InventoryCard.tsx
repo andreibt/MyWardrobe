@@ -33,6 +33,7 @@ export function InventoryCard({
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const imageUri = item.imageSerialized || item.imageUrl;
   const showCalories = kind === "cocktails" && typeof item.calories === "number";
+  const isItemExpired = kind === "pantry" && !isHistory && isExpired(item.expirationDate);
 
   return (
     <View style={[styles.card, compact && styles.compactCard]}>
@@ -123,8 +124,12 @@ export function InventoryCard({
           </View>
           {!isHistory && item.expirationDate ? (
             <View style={styles.metaItem}>
-              <MaterialCommunityIcons name="calendar-clock" color={colors.textMuted} size={14} />
-              <Text style={styles.metaText} numberOfLines={1}>
+              <MaterialCommunityIcons
+                name="calendar-clock"
+                color={isItemExpired ? colors.danger : colors.textMuted}
+                size={14}
+              />
+              <Text style={[styles.metaText, isItemExpired && styles.expiredText]} numberOfLines={1}>
                 {t("fridge_card.expiration", { date: item.expirationDate })}
               </Text>
             </View>
@@ -183,6 +188,17 @@ export function InventoryCard({
       </View>
     </View>
   );
+}
+
+function isExpired(expirationDate: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiration = new Date(`${expirationDate}T00:00:00`);
+  if (Number.isNaN(expiration.getTime())) {
+    return false;
+  }
+  expiration.setHours(0, 0, 0, 0);
+  return expiration < today;
 }
 
 const stylesVars = (kind: InventoryKind) => ({
@@ -299,6 +315,7 @@ const createStyles = (theme: AppTheme, kind: InventoryKind) => {
     metaRow: { gap: 3 },
     metaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
     metaText: { flex: 1, color: colors.textMuted, ...typography.caption },
+    expiredText: { color: colors.danger, fontWeight: "700" },
     tags: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
     tag: {
       maxWidth: "100%",
