@@ -250,7 +250,7 @@ export default function TryOnScreen() {
       return (
         <Pressable
           onLongPress={drag}
-          disabled={isActive}
+          disabled={Boolean(isActive)}
           style={[styles.card, { width: tileSize }, isActive && styles.cardActive]}
         >
           <Image source={{ uri: imageUri }} style={styles.image} />
@@ -295,7 +295,7 @@ export default function TryOnScreen() {
         <Text style={styles.subtitle}>{t("try_on.subtitle")}</Text>
         <Pressable
           onPress={handleSuggestion}
-          disabled={isSuggesting || wardrobeItems.length === 0}
+          disabled={Boolean(isSuggesting || wardrobeItems.length === 0)}
           style={({ pressed }) => [
             styles.suggestionButton,
             (isSuggesting || wardrobeItems.length === 0) && styles.suggestionButtonDisabled,
@@ -365,7 +365,7 @@ export default function TryOnScreen() {
                 pressed && styles.cardPressed,
                 !configName.trim() && styles.configSaveDisabled,
               ]}
-              disabled={!configName.trim()}
+              disabled={Boolean(!configName.trim())}
             >
               <Text style={styles.configSaveText}>{t("try_on.config_save")}</Text>
             </Pressable>

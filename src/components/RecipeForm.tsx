@@ -266,7 +266,7 @@ export function RecipeForm({
 
         <Pressable
           onPress={submit}
-          disabled={isSubmitting}
+          disabled={Boolean(isSubmitting)}
           style={({ pressed }) => [
             styles.submitButton,
             pressed && styles.buttonPressed,

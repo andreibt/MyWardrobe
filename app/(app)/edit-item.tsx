@@ -230,7 +230,7 @@ export default function EditItemScreen() {
           />
 
           <Pressable
-            disabled={!!isSubmitting}
+            disabled={Boolean(isSubmitting)}
             onPress={handleSubmit(onSubmit)}
             style={({ pressed }) => [
               styles.button,

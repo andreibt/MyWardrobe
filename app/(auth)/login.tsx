@@ -262,7 +262,7 @@ export default function LoginScreen() {
           ) : null}
 
           <Pressable
-            disabled={isLoading}
+            disabled={Boolean(isLoading)}
             onPress={handleSubmit(onSubmit)}
             style={({ pressed }) => [
               styles.button,
@@ -301,7 +301,7 @@ export default function LoginScreen() {
           ) : null}
 
           <Pressable
-            disabled={isLoading}
+            disabled={Boolean(isLoading)}
             onPress={() => {
               setLoginError(null);
               setIsRegistering((current) => !current);

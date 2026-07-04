@@ -159,7 +159,7 @@ export default function AssistantScreen() {
           <Pressable
             key={key}
             onPress={() => handleSend(t(key))}
-            disabled={isSending}
+            disabled={Boolean(isSending)}
             style={({ pressed }) => [
               styles.suggestionChip,
               pressed && styles.buttonPressed,
@@ -183,7 +183,7 @@ export default function AssistantScreen() {
         />
         <Pressable
           onPress={() => handleSend()}
-          disabled={isSending || !prompt.trim()}
+          disabled={Boolean(isSending || !prompt.trim())}
           style={({ pressed }) => [
             styles.sendButton,
             (isSending || !prompt.trim()) && styles.sendButtonDisabled,

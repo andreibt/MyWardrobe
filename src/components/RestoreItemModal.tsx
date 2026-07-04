@@ -117,14 +117,14 @@ export function RestoreItemModal({
           <View style={styles.actions}>
             <Pressable
               onPress={onClose}
-              disabled={isRestoring}
+              disabled={Boolean(isRestoring)}
               style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
             >
               <Text style={styles.secondaryText}>{t("edit.cancel")}</Text>
             </Pressable>
             <Pressable
               onPress={restore}
-              disabled={isRestoring}
+              disabled={Boolean(isRestoring)}
               style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
             >
               {isRestoring ? (

@@ -314,7 +314,7 @@ export default function WardrobeCalendarScreen() {
               </Text>
               <Pressable
                 onPress={refreshWeather}
-                disabled={isWeatherLoading}
+                disabled={Boolean(isWeatherLoading)}
                 style={({ pressed }) => [styles.weatherRefreshButton, pressed && styles.buttonPressed]}
                 accessibilityRole="button"
                 accessibilityLabel={t("wardrobe_calendar.weather_refresh_button")}

@@ -327,7 +327,7 @@ export default function AddItemScreen() {
 
         <Pressable
           onPress={handleUploadImage}
-          disabled={isImageProcessing}
+          disabled={Boolean(isImageProcessing)}
           style={({ pressed }) => [styles.photoUpload, pressed && styles.buttonPressed]}
         >
           {isImageProcessing ? (
@@ -439,7 +439,7 @@ export default function AddItemScreen() {
                   pressed && styles.buttonPressed,
                   (isDriveLoading || isImageProcessing) && styles.buttonDisabled,
                 ]}
-                disabled={isDriveLoading || isImageProcessing}
+                disabled={Boolean(isDriveLoading || isImageProcessing)}
               >
                 {isDriveLoading ? (
                   <ActivityIndicator color={colors.primary} />
@@ -456,7 +456,7 @@ export default function AddItemScreen() {
                       key={file.id}
                       onPress={() => handleSelectDriveFile(file)}
                       style={styles.driveItem}
-                      disabled={isImageProcessing}
+                      disabled={Boolean(isImageProcessing)}
                     >
                       {file.thumbnailLink ? (
                         <Image
@@ -483,7 +483,7 @@ export default function AddItemScreen() {
               pressed && styles.buttonPressed,
               isImageProcessing && styles.buttonDisabled,
             ]}
-            disabled={isImageProcessing}
+            disabled={Boolean(isImageProcessing)}
           >
             {isImageProcessing ? (
               <ActivityIndicator color={colors.primary} />
@@ -519,7 +519,7 @@ export default function AddItemScreen() {
           />
 
           <Pressable
-            disabled={isBusy}
+            disabled={Boolean(isBusy)}
             onPress={handleSubmit(onSubmit)}
             style={({ pressed }) => [
               styles.button,

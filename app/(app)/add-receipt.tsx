@@ -147,7 +147,7 @@ export default function AddReceiptScreen() {
         </Pressable>
       </View>
       <Text style={styles.subtitle}>{t("receipt.subtitle")}</Text>
-      <Pressable onPress={uploadReceipt} disabled={isReading} style={styles.uploadButton}>
+      <Pressable onPress={uploadReceipt} disabled={Boolean(isReading)} style={styles.uploadButton}>
         <Text style={styles.uploadText}>{t("receipt.upload")}</Text>
       </Pressable>
       {isReading ? <ActivityIndicator color={colors.primary} /> : null}
@@ -192,7 +192,7 @@ export default function AddReceiptScreen() {
             )) : null}
           </View>
           <FridgeTagSelector ownerId={user?.id ?? null} selectedTags={draft.tags} onChange={(tags) => setDraft({ ...draft, tags })} />
-          <Pressable onPress={saveItem} disabled={isSaving} style={styles.saveButton}>
+          <Pressable onPress={saveItem} disabled={Boolean(isSaving)} style={styles.saveButton}>
             {isSaving ? <ActivityIndicator color={colors.background} /> : <Text style={styles.saveText}>{t("fridge_add.save")}</Text>}
           </Pressable>
         </View>

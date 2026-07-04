@@ -167,7 +167,7 @@ export default function SettingsScreen() {
               style={styles.input}
             />
             <Pressable
-              disabled={isSavingAI}
+              disabled={Boolean(isSavingAI)}
               onPress={() => saveSettings()}
               style={({ pressed }) => [styles.saveButton, pressed && styles.buttonPressed]}
             >
@@ -181,7 +181,7 @@ export default function SettingsScreen() {
       </View>
 
       <Pressable
-        disabled={isLoading}
+        disabled={Boolean(isLoading)}
         onPress={signOut}
         style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
       >

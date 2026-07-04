@@ -219,7 +219,7 @@ export default function AddFridgeItemScreen() {
 
         <Pressable
           onPress={handleUploadImage}
-          disabled={isImageProcessing}
+          disabled={Boolean(isImageProcessing)}
           style={({ pressed }) => [styles.photoUpload, pressed && styles.buttonPressed]}
         >
           {isImageProcessing ? (
@@ -347,7 +347,7 @@ export default function AddFridgeItemScreen() {
             ) : null}
             <Pressable
               onPress={handleUploadImage}
-              disabled={isImageProcessing}
+              disabled={Boolean(isImageProcessing)}
               style={({ pressed }) => [
                 styles.secondaryButton,
                 pressed && styles.buttonPressed,
@@ -370,7 +370,7 @@ export default function AddFridgeItemScreen() {
 
           <Pressable
             onPress={handleSubmit(onSubmit)}
-            disabled={isBusy}
+            disabled={Boolean(isBusy)}
             style={({ pressed }) => [
               styles.saveButton,
               pressed && styles.buttonPressed,

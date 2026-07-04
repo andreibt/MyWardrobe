@@ -422,7 +422,7 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
               </View>
               <View style={styles.pageControls}>
                 <Pressable
-                  disabled={currentPage === 1}
+                  disabled={Boolean(currentPage === 1)}
                   onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
                   style={({ pressed }) => [
                     styles.pageButton,
@@ -437,7 +437,7 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
                   {t("fridge_list.page_status", { page: currentPage, total: totalPages })}
                 </Text>
                 <Pressable
-                  disabled={currentPage === totalPages}
+                  disabled={Boolean(currentPage === totalPages)}
                   onPress={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                   style={({ pressed }) => [
                     styles.pageButton,

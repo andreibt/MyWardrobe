@@ -255,7 +255,7 @@ export default function CocktailRecipesScreen() {
           filteredRecipes.length > 0 ? (
             <View style={styles.pagination}>
               <Pressable
-                disabled={page === 1}
+                disabled={Boolean(page === 1)}
                 onPress={() => setPage((current) => Math.max(1, current - 1))}
                 style={({ pressed }) => [
                   styles.pageButton,
@@ -270,7 +270,7 @@ export default function CocktailRecipesScreen() {
                 {t("recipes.page_status", { page, total: totalPages })}
               </Text>
               <Pressable
-                disabled={page === totalPages}
+                disabled={Boolean(page === totalPages)}
                 onPress={() => setPage((current) => Math.min(totalPages, current + 1))}
                 style={({ pressed }) => [
                   styles.pageButton,

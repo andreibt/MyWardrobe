@@ -136,7 +136,7 @@ export function TagSelector({ ownerId, selectedTags, onChange }: TagSelectorProp
                 pressed && styles.buttonPressed,
                 !ownerId && styles.buttonDisabled,
               ]}
-              disabled={!ownerId}
+              disabled={Boolean(!ownerId)}
             >
               <Text style={styles.addButtonText}>{t("tags.add_button")}</Text>
             </Pressable>
