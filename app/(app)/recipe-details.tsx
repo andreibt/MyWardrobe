@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RecipeIngredientZone } from "../../src/components/RecipeIngredientZone";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { subscribeToFridgeItems, type FridgeItem } from "../../src/lib/firestore/fridgeItems";
-import type { Recipe } from "../../src/lib/firestore/recipes";
+import { hydrateRecipeIngredients, type Recipe } from "../../src/lib/firestore/recipes";
 import { addShoppingListItems } from "../../src/lib/firestore/shoppingList";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
@@ -45,13 +45,17 @@ export default function RecipeDetailsScreen() {
     () => new Set(fridgeItems.filter((item) => !item.isHistory).map((item) => item.id)),
     [fridgeItems]
   );
+  const hydratedIngredients = useMemo(
+    () => (recipe ? hydrateRecipeIngredients(recipe.ingredients, fridgeItems) : []),
+    [fridgeItems, recipe]
+  );
   const inFridgeIngredients = useMemo(
-    () => recipe?.ingredients.filter((ingredient) => currentFridgeItemIds.has(ingredient.fridgeItemId)) ?? [],
-    [currentFridgeItemIds, recipe]
+    () => hydratedIngredients.filter((ingredient) => currentFridgeItemIds.has(ingredient.fridgeItemId)),
+    [currentFridgeItemIds, hydratedIngredients]
   );
   const needToBuyIngredients = useMemo(
-    () => recipe?.ingredients.filter((ingredient) => !currentFridgeItemIds.has(ingredient.fridgeItemId)) ?? [],
-    [currentFridgeItemIds, recipe]
+    () => hydratedIngredients.filter((ingredient) => !currentFridgeItemIds.has(ingredient.fridgeItemId)),
+    [currentFridgeItemIds, hydratedIngredients]
   );
 
   const addMissingItems = () => {

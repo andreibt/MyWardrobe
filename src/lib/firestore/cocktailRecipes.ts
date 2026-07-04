@@ -19,13 +19,15 @@ type UpdateCocktailRecipe = Partial<NewCocktailRecipe>;
 const cocktailRecipesCollection = collection(db, "cocktailRecipes");
 
 const sanitizeIngredients = (ingredients: RecipeIngredient[]) =>
-  ingredients.map(({ fridgeItemId, name, quantity, quantityType, description, calories }) => ({
+  ingredients.map(({ fridgeItemId, name, quantity, quantityType, description, calories, imageUrl, imageSerialized }) => ({
     fridgeItemId,
     name,
     quantity,
     quantityType,
     description,
     calories,
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(imageSerialized ? { imageSerialized } : {}),
   }));
 
 export function subscribeToCocktailRecipes(

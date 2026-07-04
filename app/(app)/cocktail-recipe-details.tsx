@@ -8,6 +8,7 @@ import { RecipeIngredientZone } from "../../src/components/RecipeIngredientZone"
 import { useI18n } from "../../src/i18n/I18nProvider";
 import type { CocktailRecipe } from "../../src/lib/firestore/cocktailRecipes";
 import { subscribeToCocktailItems, type InventoryItem } from "../../src/lib/firestore/inventoryItems";
+import { hydrateRecipeIngredients } from "../../src/lib/firestore/recipes";
 import { addShoppingListItems } from "../../src/lib/firestore/shoppingList";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
@@ -45,13 +46,17 @@ export default function CocktailRecipeDetailsScreen() {
     () => new Set(items.filter((item) => !item.isHistory).map((item) => item.id)),
     [items]
   );
+  const hydratedIngredients = useMemo(
+    () => (recipe ? hydrateRecipeIngredients(recipe.ingredients, items) : []),
+    [items, recipe]
+  );
   const availableIngredients = useMemo(
-    () => recipe?.ingredients.filter((ingredient) => currentItemIds.has(ingredient.fridgeItemId)) ?? [],
-    [currentItemIds, recipe]
+    () => hydratedIngredients.filter((ingredient) => currentItemIds.has(ingredient.fridgeItemId)),
+    [currentItemIds, hydratedIngredients]
   );
   const missingIngredients = useMemo(
-    () => recipe?.ingredients.filter((ingredient) => !currentItemIds.has(ingredient.fridgeItemId)) ?? [],
-    [currentItemIds, recipe]
+    () => hydratedIngredients.filter((ingredient) => !currentItemIds.has(ingredient.fridgeItemId)),
+    [currentItemIds, hydratedIngredients]
   );
 
   const addMissingItems = () => {

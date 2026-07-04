@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import { subscribeToFridgeItems, type FridgeItem } from "../../../src/lib/firestore/fridgeItems";
-import { subscribeToRecipes, type Recipe } from "../../../src/lib/firestore/recipes";
+import { hydrateRecipeIngredients, subscribeToRecipes, type Recipe } from "../../../src/lib/firestore/recipes";
 import { addShoppingListItems } from "../../../src/lib/firestore/shoppingList";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
@@ -64,11 +64,11 @@ export default function RecipesScreen() {
       (recipe) =>
         recipe.name.toLowerCase().includes(normalizedQuery) ||
         recipe.instructions.toLowerCase().includes(normalizedQuery) ||
-        recipe.ingredients.some((ingredient) =>
+        hydrateRecipeIngredients(recipe.ingredients, fridgeItems).some((ingredient) =>
           ingredient.name.toLowerCase().includes(normalizedQuery)
         )
     );
-  }, [recipes, searchQuery]);
+  }, [fridgeItems, recipes, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecipes.length / PAGE_SIZE));
   const pageRecipes = useMemo(
@@ -85,14 +85,23 @@ export default function RecipesScreen() {
   }, [totalPages]);
 
   const openRecipe = (pathname: "/(app)/recipe-details" | "/(app)/edit-recipe", recipe: Recipe) => {
-    router.push({ pathname, params: { recipe: JSON.stringify(recipe) } });
+    router.push({
+      pathname,
+      params: {
+        recipe: JSON.stringify({
+          ...recipe,
+          ingredients: hydrateRecipeIngredients(recipe.ingredients, fridgeItems),
+        }),
+      },
+    });
   };
 
   const addMissingItems = (recipe: Recipe) => {
     if (!user) {
       return;
     }
-    const missingIngredients = recipe.ingredients.filter(
+    const hydratedIngredients = hydrateRecipeIngredients(recipe.ingredients, fridgeItems);
+    const missingIngredients = hydratedIngredients.filter(
       (ingredient) => !currentFridgeItemIds.has(ingredient.fridgeItemId)
     );
     const fridgeItemsById = new Map(fridgeItems.map((item) => [item.id, item]));
@@ -113,10 +122,11 @@ export default function RecipesScreen() {
   };
 
   const renderRecipe = ({ item }: { item: Recipe }) => {
-    const availableIngredients = item.ingredients.filter((ingredient) =>
+    const hydratedIngredients = hydrateRecipeIngredients(item.ingredients, fridgeItems);
+    const availableIngredients = hydratedIngredients.filter((ingredient) =>
       currentFridgeItemIds.has(ingredient.fridgeItemId)
     );
-    const missingIngredients = item.ingredients.filter(
+    const missingIngredients = hydratedIngredients.filter(
       (ingredient) => !currentFridgeItemIds.has(ingredient.fridgeItemId)
     );
 

@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useI18n } from "../i18n/I18nProvider";
 import type { RecipeIngredient } from "../lib/firestore/recipes";
@@ -24,7 +24,12 @@ export function RecipeIngredientZone({
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const colors = theme.colors;
-  const [selected, setSelected] = useState<RecipeIngredient | null>(null);
+  const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null);
+  const selected = useMemo(
+    () => ingredients.find((ingredient) => ingredient.fridgeItemId === selectedIngredientId) ?? null,
+    [ingredients, selectedIngredientId]
+  );
+  const selectedImageUri = selected?.imageSerialized || selected?.imageUrl;
 
   return (
     <View style={styles.section}>
@@ -36,10 +41,19 @@ export function RecipeIngredientZone({
           {ingredients.map((ingredient) => (
             <View key={ingredient.fridgeItemId} style={styles.chip}>
               <Pressable
-                onPress={() => setSelected(ingredient)}
+                onPress={() => setSelectedIngredientId(ingredient.fridgeItemId)}
                 style={({ pressed }) => [styles.chipButton, pressed && styles.buttonPressed]}
               >
-                <MaterialCommunityIcons name="food-variant" color={colors.primary} size={14} />
+                {ingredient.imageSerialized || ingredient.imageUrl ? (
+                  <Image
+                    source={{ uri: ingredient.imageSerialized || ingredient.imageUrl }}
+                    style={styles.chipImage}
+                  />
+                ) : (
+                  <View style={styles.chipIcon}>
+                    <MaterialCommunityIcons name="food-variant" color={colors.primary} size={14} />
+                  </View>
+                )}
                 <Text style={styles.chipText}>{ingredient.name}</Text>
               </Pressable>
               {editable && onRemove ? (
@@ -60,19 +74,23 @@ export function RecipeIngredientZone({
         visible={Boolean(selected)}
         transparent
         animationType="fade"
-        onRequestClose={() => setSelected(null)}
+        onRequestClose={() => setSelectedIngredientId(null)}
       >
         <View style={styles.overlay}>
           <Pressable
             style={styles.backdrop}
-            onPress={() => setSelected(null)}
+            onPress={() => setSelectedIngredientId(null)}
             accessibilityRole="button"
             accessibilityLabel={t("card.close")}
           />
           <View style={styles.modal}>
-            <View style={styles.modalIcon}>
-              <MaterialCommunityIcons name="food-variant" color={colors.primary} size={24} />
-            </View>
+            {selectedImageUri ? (
+              <Image source={{ uri: selectedImageUri }} style={styles.modalImage} />
+            ) : (
+              <View style={styles.modalIcon}>
+                <MaterialCommunityIcons name="food-variant" color={colors.primary} size={24} />
+              </View>
+            )}
             <Text style={styles.modalTitle}>{selected?.name}</Text>
             <Text style={styles.modalText}>{selected?.description}</Text>
             <Text style={styles.modalText}>
@@ -85,7 +103,7 @@ export function RecipeIngredientZone({
               {t("recipes.ingredient_calories", { calories: selected?.calories ?? 0 })}
             </Text>
             <Pressable
-              onPress={() => setSelected(null)}
+              onPress={() => setSelectedIngredientId(null)}
               style={({ pressed }) => [styles.closeButton, pressed && styles.buttonPressed]}
             >
               <Text style={styles.closeText}>{t("card.close")}</Text>
@@ -135,8 +153,22 @@ const createStyles = (theme: AppTheme) => {
       flexDirection: "row",
       alignItems: "center",
       gap: 5,
-      paddingLeft: spacing.sm,
+      paddingLeft: 4,
       paddingRight: spacing.xs,
+    },
+    chipImage: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: colors.surface3,
+    },
+    chipIcon: {
+      width: 26,
+      height: 26,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 13,
+      backgroundColor: colors.surface3,
     },
     chipText: {
       color: colors.text,
@@ -178,6 +210,12 @@ const createStyles = (theme: AppTheme) => {
       alignItems: "center",
       justifyContent: "center",
       borderRadius: 14,
+      backgroundColor: colors.surface3,
+    },
+    modalImage: {
+      width: "100%",
+      height: 180,
+      borderRadius: 12,
       backgroundColor: colors.surface3,
     },
     modalTitle: {

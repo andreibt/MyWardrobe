@@ -4,7 +4,7 @@ import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 
 import { useI18n } from "../i18n/I18nProvider";
 import { subscribeToFridgeItems, type FridgeItem } from "../lib/firestore/fridgeItems";
-import type { RecipeIngredient } from "../lib/firestore/recipes";
+import { hydrateRecipeIngredients, type RecipeIngredient } from "../lib/firestore/recipes";
 import type { InventoryItem } from "../lib/firestore/inventoryItems";
 import { useTheme, type AppTheme } from "../providers/ThemeProvider";
 import { spacing, typography } from "../theme/tokens";
@@ -73,6 +73,10 @@ export function RecipeForm({
     () => inventoryItems.find((item) => item.id === selectedItemId),
     [inventoryItems, selectedItemId]
   );
+  const hydratedIngredients = useMemo(
+    () => hydrateRecipeIngredients(value.ingredients, inventoryItems),
+    [inventoryItems, value.ingredients]
+  );
   const availableItems = useMemo(() => {
     const ingredientIds = new Set(value.ingredients.map((ingredient) => ingredient.fridgeItemId));
     return inventoryItems.filter((item) => !ingredientIds.has(item.id));
@@ -91,6 +95,8 @@ export function RecipeForm({
       quantityType: selectedItem.quantityType,
       description: selectedItem.description,
       calories: selectedItem.calories ?? 0,
+      imageUrl: selectedItem.imageUrl,
+      imageSerialized: selectedItem.imageSerialized,
     };
     setValue((current) => ({
       ...current,
@@ -124,7 +130,7 @@ export function RecipeForm({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(value);
+      await onSubmit({ ...value, ingredients: hydratedIngredients });
     } finally {
       setIsSubmitting(false);
     }
@@ -246,7 +252,7 @@ export function RecipeForm({
         </View>
 
         <RecipeIngredientZone
-          ingredients={value.ingredients}
+          ingredients={hydratedIngredients}
           editable
           onRemove={(id) =>
             setValue({

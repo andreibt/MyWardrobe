@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import { subscribeToCocktailRecipes, type CocktailRecipe } from "../../../src/lib/firestore/cocktailRecipes";
 import { subscribeToCocktailItems, type InventoryItem } from "../../../src/lib/firestore/inventoryItems";
+import { hydrateRecipeIngredients } from "../../../src/lib/firestore/recipes";
 import { addShoppingListItems } from "../../../src/lib/firestore/shoppingList";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
@@ -55,11 +56,11 @@ export default function CocktailRecipesScreen() {
       (recipe) =>
         recipe.name.toLowerCase().includes(normalizedQuery) ||
         recipe.instructions.toLowerCase().includes(normalizedQuery) ||
-        recipe.ingredients.some((ingredient) =>
+        hydrateRecipeIngredients(recipe.ingredients, items).some((ingredient) =>
           ingredient.name.toLowerCase().includes(normalizedQuery)
         )
     );
-  }, [recipes, searchQuery]);
+  }, [items, recipes, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecipes.length / PAGE_SIZE));
   const pageRecipes = useMemo(
@@ -79,12 +80,21 @@ export default function CocktailRecipesScreen() {
     pathname: "/(app)/cocktail-recipe-details" | "/(app)/edit-cocktail-recipe",
     recipe: CocktailRecipe
   ) => {
-    router.push({ pathname, params: { recipe: JSON.stringify(recipe) } });
+    router.push({
+      pathname,
+      params: {
+        recipe: JSON.stringify({
+          ...recipe,
+          ingredients: hydrateRecipeIngredients(recipe.ingredients, items),
+        }),
+      },
+    });
   };
 
   const addMissingItems = (recipe: CocktailRecipe) => {
     if (!user) return;
-    const missingIngredients = recipe.ingredients.filter(
+    const hydratedIngredients = hydrateRecipeIngredients(recipe.ingredients, items);
+    const missingIngredients = hydratedIngredients.filter(
       (ingredient) => !currentItemIds.has(ingredient.fridgeItemId)
     );
     addShoppingListItems(
@@ -100,10 +110,11 @@ export default function CocktailRecipesScreen() {
   };
 
   const renderRecipe = ({ item }: { item: CocktailRecipe }) => {
-    const availableIngredients = item.ingredients.filter((ingredient) =>
+    const hydratedIngredients = hydrateRecipeIngredients(item.ingredients, items);
+    const availableIngredients = hydratedIngredients.filter((ingredient) =>
       currentItemIds.has(ingredient.fridgeItemId)
     );
-    const missingIngredients = item.ingredients.filter(
+    const missingIngredients = hydratedIngredients.filter(
       (ingredient) => !currentItemIds.has(ingredient.fridgeItemId)
     );
 
