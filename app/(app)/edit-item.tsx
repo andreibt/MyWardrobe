@@ -20,6 +20,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TagSelector } from "../../src/components/TagSelector";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { updateWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
+import {
+  dismissToOrReplace,
+  goBackOrReplace,
+  WARDROBE_LIST_ROUTE,
+} from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { radius, spacing, typography } from "../../src/theme/tokens";
@@ -108,7 +113,7 @@ export default function EditItemScreen() {
       ...(data.imageUrl !== initialImageUrl ? { imageSerialized: "" } : {}),
     };
     await updateWardrobeItem(itemId, payload);
-    router.replace("/(app)/(wardrobe)/wardrobe-list");
+    dismissToOrReplace(router, WARDROBE_LIST_ROUTE);
   };
 
   return (
@@ -128,7 +133,7 @@ export default function EditItemScreen() {
       >
         <View style={styles.navBar}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBackOrReplace(router, WARDROBE_LIST_ROUTE)}
             style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
           >
             <MaterialCommunityIcons name="arrow-left" color={colors.text} size={20} />
@@ -241,7 +246,7 @@ export default function EditItemScreen() {
           </Pressable>
         </View>
 
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => goBackOrReplace(router, WARDROBE_LIST_ROUTE)}>
           <Text style={styles.link}>{t("edit.cancel")}</Text>
         </Pressable>
       </ScrollView>

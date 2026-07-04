@@ -22,6 +22,7 @@ import {
   QUANTITY_TYPES,
   type QuantityType,
 } from "../../src/lib/firestore/fridgeItems";
+import { FRIDGE_LIST_ROUTE, goBackOrReplace } from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
@@ -141,7 +142,7 @@ export default function AddReceiptScreen() {
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <Text style={styles.title}>{t("receipt.title")}</Text>
-        <Pressable onPress={() => router.back()} style={styles.cancelButton}>
+        <Pressable onPress={() => goBackOrReplace(router, FRIDGE_LIST_ROUTE)} style={styles.cancelButton}>
           <Text style={styles.cancelText}>{t("add.cancel")}</Text>
         </Pressable>
       </View>

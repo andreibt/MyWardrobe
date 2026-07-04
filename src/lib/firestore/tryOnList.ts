@@ -44,10 +44,10 @@ export function subscribeToTryOnItems(
   const tryOnQuery = query(tryOnCollection, ...filters);
 
   return onSnapshot(tryOnQuery, (snapshot) => {
-    const items = snapshot.docs.map((doc) => {
+    const items = snapshot.docs.map((doc): TryOnItem => {
       const data = doc.data();
       const rawLayer = String(data.layer ?? "middle");
-      const layer =
+      const layer: TryOnItem["layer"] =
         rawLayer === "top" || rawLayer === "middle" || rawLayer === "bottom"
           ? rawLayer
           : "middle";

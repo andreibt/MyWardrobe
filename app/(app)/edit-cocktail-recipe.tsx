@@ -8,6 +8,11 @@ import { RecipeForm, type RecipeFormValue } from "../../src/components/RecipeFor
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { updateCocktailRecipe, type CocktailRecipe } from "../../src/lib/firestore/cocktailRecipes";
 import { subscribeToCocktailItems } from "../../src/lib/firestore/inventoryItems";
+import {
+  COCKTAIL_RECIPES_ROUTE,
+  dismissToOrReplace,
+  goBackOrReplace,
+} from "../../src/lib/navigation";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../src/theme/tokens";
 
@@ -35,7 +40,7 @@ export default function EditCocktailRecipeScreen() {
         <MaterialCommunityIcons name="glass-cocktail-off" color={colors.muted} size={46} />
         <Text style={styles.title}>{t("recipes.not_found")}</Text>
         <Pressable
-          onPress={() => router.replace("/(app)/(cocktails)/cocktail-recipes")}
+          onPress={() => dismissToOrReplace(router, COCKTAIL_RECIPES_ROUTE)}
           style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
         >
           <Text style={styles.secondaryButtonText}>{t("cocktail_recipes.back")}</Text>
@@ -56,7 +61,7 @@ export default function EditCocktailRecipeScreen() {
     <View style={styles.container}>
       <View style={[styles.navBar, { paddingTop: Math.max(insets.top + spacing.sm, spacing.lg) }]}>
         <Pressable
-          onPress={() => router.replace("/(app)/(cocktails)/cocktail-recipes")}
+          onPress={() => goBackOrReplace(router, COCKTAIL_RECIPES_ROUTE)}
           style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
           accessibilityRole="button"
           accessibilityLabel={t("card.close")}
@@ -79,7 +84,7 @@ export default function EditCocktailRecipeScreen() {
             calories: Number(value.calories),
             portions: Number(value.portions),
           });
-          router.replace("/(app)/(cocktails)/cocktail-recipes");
+          dismissToOrReplace(router, COCKTAIL_RECIPES_ROUTE);
         }}
       />
     </View>

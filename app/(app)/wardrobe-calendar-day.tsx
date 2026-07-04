@@ -11,6 +11,7 @@ import {
   saveWardrobeCalendarDay,
   subscribeToWardrobeCalendarDay,
 } from "../../src/lib/firestore/wardrobeCalendar";
+import { goBackOrReplace, WARDROBE_CALENDAR_ROUTE } from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../src/theme/tokens";
@@ -87,7 +88,7 @@ export default function WardrobeCalendarDayScreen() {
       >
         <View style={styles.navBar}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBackOrReplace(router, WARDROBE_CALENDAR_ROUTE)}
             style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
           >
             <MaterialCommunityIcons name="arrow-left" color={colors.text} size={20} />

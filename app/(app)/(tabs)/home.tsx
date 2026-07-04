@@ -23,6 +23,7 @@ import {
   subscribeToWardrobeItems,
   type WardrobeItem,
 } from "../../../src/lib/firestore/wardrobeItems";
+import { useAndroidRootBackGuard } from "../../../src/lib/navigation";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
 import { spacing } from "../../../src/theme/tokens";
@@ -45,6 +46,8 @@ type ExpiringHomeItem = {
 };
 
 export default function HomeScreen() {
+  useAndroidRootBackGuard();
+
   const router = useRouter();
   const { t } = useI18n();
   const { user } = useAuth();

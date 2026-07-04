@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { DateInput } from "./DateInput";
 import { useI18n } from "../i18n/I18nProvider";
 import { restoreInventoryItem, type InventoryKind } from "../lib/firestore/inventoryItems";
+import { dismissToOrReplace, goBackOrReplace } from "../lib/navigation";
 import { useTheme, type AppTheme } from "../providers/ThemeProvider";
 import { radius, spacing, typography } from "../theme/tokens";
 
@@ -40,7 +41,7 @@ export function InventoryRestoreScreen({
       return;
     }
     await restoreInventoryItem(kind, itemId, expirationDate);
-    router.replace(returnPath);
+    dismissToOrReplace(router, returnPath);
   };
 
   return (
@@ -59,7 +60,7 @@ export function InventoryRestoreScreen({
       <Pressable onPress={restore} style={({ pressed }) => [styles.restoreButton, pressed && styles.buttonPressed]}>
         <Text style={styles.restoreText}>{buttonLabel}</Text>
       </Pressable>
-      <Pressable onPress={() => router.back()}>
+      <Pressable onPress={() => goBackOrReplace(router, returnPath)}>
         <Text style={styles.cancelText}>{t("edit.cancel")}</Text>
       </Pressable>
     </View>

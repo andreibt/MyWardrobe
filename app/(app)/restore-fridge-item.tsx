@@ -5,6 +5,11 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { DateInput } from "../../src/components/DateInput";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { restoreFridgeItem } from "../../src/lib/firestore/fridgeItems";
+import {
+  dismissToOrReplace,
+  FRIDGE_LIST_ROUTE,
+  goBackOrReplace,
+} from "../../src/lib/navigation";
 import { colors, radius, spacing, typography } from "../../src/theme/tokens";
 
 const getParam = (value: string | string[] | undefined) =>
@@ -24,7 +29,7 @@ export default function RestoreFridgeItemScreen() {
       return;
     }
     await restoreFridgeItem(itemId, expirationDate);
-    router.replace("/(app)/(fridge)/fridge-list");
+    dismissToOrReplace(router, FRIDGE_LIST_ROUTE);
   };
 
   return (
@@ -41,7 +46,7 @@ export default function RestoreFridgeItemScreen() {
       <Pressable onPress={handleRestore} style={styles.restoreButton}>
         <Text style={styles.restoreText}>{t("fridge_restore.button")}</Text>
       </Pressable>
-      <Pressable onPress={() => router.back()}>
+      <Pressable onPress={() => goBackOrReplace(router, FRIDGE_LIST_ROUTE)}>
         <Text style={styles.cancelText}>{t("edit.cancel")}</Text>
       </Pressable>
     </View>

@@ -6,6 +6,8 @@ import type { PushTokenType } from "./firestore/pushTokens";
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -41,12 +43,15 @@ export async function registerForPushNotificationsAsync(): Promise<PushTokenResu
     });
   }
 
-  const deviceToken = await Notifications.getDevicePushTokenAsync(
-    Platform.OS === "android" ? { type: "fcm" } : { type: "apns" }
-  );
+  const deviceToken = await Notifications.getDevicePushTokenAsync();
+  const token = typeof deviceToken.data === "string" ? deviceToken.data : "";
+
+  if (!token) {
+    return null;
+  }
 
   return {
-    token: deviceToken.data,
+    token,
     type: Platform.OS === "android" ? "fcm" : "apns",
   };
 }

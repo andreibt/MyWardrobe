@@ -7,6 +7,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RecipeForm, type RecipeFormValue } from "../../src/components/RecipeForm";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { updateRecipe, type Recipe } from "../../src/lib/firestore/recipes";
+import {
+  dismissToOrReplace,
+  FRIDGE_RECIPES_ROUTE,
+  goBackOrReplace,
+} from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../src/theme/tokens";
@@ -36,7 +41,7 @@ export default function EditRecipeScreen() {
         <MaterialCommunityIcons name="book-alert-outline" color={colors.muted} size={46} />
         <Text style={styles.title}>{t("recipes.not_found")}</Text>
         <Pressable
-          onPress={() => router.replace("/(app)/(fridge)/recipes")}
+          onPress={() => dismissToOrReplace(router, FRIDGE_RECIPES_ROUTE)}
           style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
         >
           <Text style={styles.secondaryButtonText}>{t("recipes.back")}</Text>
@@ -57,7 +62,7 @@ export default function EditRecipeScreen() {
     <View style={styles.container}>
       <View style={[styles.navBar, { paddingTop: Math.max(insets.top + spacing.sm, spacing.lg) }]}>
         <Pressable
-          onPress={() => router.replace("/(app)/(fridge)/recipes")}
+          onPress={() => goBackOrReplace(router, FRIDGE_RECIPES_ROUTE)}
           style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
           accessibilityRole="button"
           accessibilityLabel={t("card.close")}
@@ -76,7 +81,7 @@ export default function EditRecipeScreen() {
             calories: Number(value.calories),
             portions: Number(value.portions),
           });
-          router.replace("/(app)/(fridge)/recipes");
+          dismissToOrReplace(router, FRIDGE_RECIPES_ROUTE);
         }}
       />
     </View>

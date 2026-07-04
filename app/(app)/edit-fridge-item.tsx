@@ -28,6 +28,11 @@ import {
   updateFridgeItem,
   type QuantityType,
 } from "../../src/lib/firestore/fridgeItems";
+import {
+  dismissToOrReplace,
+  FRIDGE_LIST_ROUTE,
+  goBackOrReplace,
+} from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../src/theme/tokens";
@@ -129,7 +134,7 @@ export default function EditFridgeItemScreen() {
       return;
     }
     await updateFridgeItem(itemId, { ...data, quantityType, tags, imageSerialized });
-    router.replace("/(app)/(fridge)/fridge-list");
+    dismissToOrReplace(router, FRIDGE_LIST_ROUTE);
   };
 
   const handleUploadImage = async () => {
@@ -207,7 +212,7 @@ export default function EditFridgeItemScreen() {
       >
         <View style={styles.navBar}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBackOrReplace(router, FRIDGE_LIST_ROUTE)}
             style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
             accessibilityRole="button"
             accessibilityLabel={t("edit.cancel")}
@@ -385,7 +390,7 @@ export default function EditFridgeItemScreen() {
           </Pressable>
         </View>
 
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => goBackOrReplace(router, FRIDGE_LIST_ROUTE)}>
           <Text style={styles.cancelText}>{t("edit.cancel")}</Text>
         </Pressable>
       </ScrollView>

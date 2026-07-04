@@ -7,6 +7,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RecipeForm } from "../../src/components/RecipeForm";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { addRecipe } from "../../src/lib/firestore/recipes";
+import {
+  dismissToOrReplace,
+  FRIDGE_RECIPES_ROUTE,
+  goBackOrReplace,
+} from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { spacing } from "../../src/theme/tokens";
@@ -24,7 +29,7 @@ export default function AddRecipeScreen() {
     <View style={styles.container}>
       <View style={[styles.navBar, { paddingTop: Math.max(insets.top + spacing.sm, spacing.lg) }]}>
         <Pressable
-          onPress={() => router.replace("/(app)/(fridge)/recipes")}
+          onPress={() => goBackOrReplace(router, FRIDGE_RECIPES_ROUTE)}
           style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
           accessibilityRole="button"
           accessibilityLabel={t("card.close")}
@@ -43,7 +48,7 @@ export default function AddRecipeScreen() {
             calories: Number(value.calories),
             portions: Number(value.portions),
           });
-          router.replace("/(app)/(fridge)/recipes");
+          dismissToOrReplace(router, FRIDGE_RECIPES_ROUTE);
         }}
       />
     </View>

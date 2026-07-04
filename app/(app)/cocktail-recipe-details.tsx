@@ -10,6 +10,11 @@ import type { CocktailRecipe } from "../../src/lib/firestore/cocktailRecipes";
 import { subscribeToCocktailItems, type InventoryItem } from "../../src/lib/firestore/inventoryItems";
 import { hydrateRecipeIngredients } from "../../src/lib/firestore/recipes";
 import { addShoppingListItems } from "../../src/lib/firestore/shoppingList";
+import {
+  COCKTAIL_RECIPES_ROUTE,
+  dismissToOrReplace,
+  goBackOrReplace,
+} from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../src/theme/tokens";
@@ -79,7 +84,7 @@ export default function CocktailRecipeDetailsScreen() {
         <MaterialCommunityIcons name="glass-cocktail-off" color={colors.muted} size={46} />
         <Text style={styles.title}>{t("recipes.not_found")}</Text>
         <Pressable
-          onPress={() => router.replace("/(app)/(cocktails)/cocktail-recipes")}
+          onPress={() => dismissToOrReplace(router, COCKTAIL_RECIPES_ROUTE)}
           style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
         >
           <Text style={styles.secondaryButtonText}>{t("cocktail_recipes.back")}</Text>
@@ -100,7 +105,7 @@ export default function CocktailRecipeDetailsScreen() {
     >
       <View style={styles.navBar}>
         <Pressable
-          onPress={() => router.replace("/(app)/(cocktails)/cocktail-recipes")}
+          onPress={() => goBackOrReplace(router, COCKTAIL_RECIPES_ROUTE)}
           style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
           accessibilityRole="button"
           accessibilityLabel={t("cocktail_recipes.back")}

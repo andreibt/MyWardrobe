@@ -23,6 +23,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TagSelector } from "../../src/components/TagSelector";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { addWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
+import {
+  dismissToOrReplace,
+  goBackOrReplace,
+  WARDROBE_LIST_ROUTE,
+} from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { radius, spacing, typography } from "../../src/theme/tokens";
@@ -164,7 +169,7 @@ export default function AddItemScreen() {
       tags,
       ...(imageSerialized ? { imageSerialized } : {}),
     });
-    router.replace("/(app)/(wardrobe)/wardrobe-list");
+    dismissToOrReplace(router, WARDROBE_LIST_ROUTE);
   };
 
   const handleLoadDriveFiles = async () => {
@@ -310,7 +315,7 @@ export default function AddItemScreen() {
       >
         <View style={styles.navBar}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBackOrReplace(router, WARDROBE_LIST_ROUTE)}
             style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
             accessibilityRole="button"
             accessibilityLabel={t("add.cancel")}
@@ -530,7 +535,7 @@ export default function AddItemScreen() {
           </Pressable>
         </View>
 
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => goBackOrReplace(router, WARDROBE_LIST_ROUTE)}>
           <Text style={styles.link}>{t("add.cancel")}</Text>
         </Pressable>
       </ScrollView>

@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
 
 import { useI18n } from "../i18n/I18nProvider";
+import { dismissToOrReplace, goBackOrReplace } from "../lib/navigation";
 import {
   addInventoryItem,
   updateInventoryItem,
@@ -166,7 +167,7 @@ export function InventoryItemFormScreen({
     } else if (initialItem?.id) {
       await updateInventoryItem(kind, initialItem.id, payload);
     }
-    router.replace(returnPath);
+    dismissToOrReplace(router, returnPath);
   };
 
   const handleUploadImage = async () => {
@@ -249,7 +250,7 @@ export function InventoryItemFormScreen({
       >
         <View style={styles.navBar}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBackOrReplace(router, returnPath)}
             style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
             accessibilityRole="button"
             accessibilityLabel={t("add.cancel")}
@@ -431,7 +432,7 @@ export function InventoryItemFormScreen({
           </Pressable>
         </View>
 
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => goBackOrReplace(router, returnPath)}>
           <Text style={styles.cancelText}>{t("add.cancel")}</Text>
         </Pressable>
       </ScrollView>

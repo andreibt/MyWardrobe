@@ -8,6 +8,11 @@ import { RecipeForm } from "../../src/components/RecipeForm";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { addCocktailRecipe } from "../../src/lib/firestore/cocktailRecipes";
 import { subscribeToCocktailItems } from "../../src/lib/firestore/inventoryItems";
+import {
+  COCKTAIL_RECIPES_ROUTE,
+  dismissToOrReplace,
+  goBackOrReplace,
+} from "../../src/lib/navigation";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
 import { spacing } from "../../src/theme/tokens";
@@ -25,7 +30,7 @@ export default function AddCocktailRecipeScreen() {
     <View style={styles.container}>
       <View style={[styles.navBar, { paddingTop: Math.max(insets.top + spacing.sm, spacing.lg) }]}>
         <Pressable
-          onPress={() => router.replace("/(app)/(cocktails)/cocktail-recipes")}
+          onPress={() => goBackOrReplace(router, COCKTAIL_RECIPES_ROUTE)}
           style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
           accessibilityRole="button"
           accessibilityLabel={t("card.close")}
@@ -48,7 +53,7 @@ export default function AddCocktailRecipeScreen() {
             calories: Number(value.calories),
             portions: Number(value.portions),
           });
-          router.replace("/(app)/(cocktails)/cocktail-recipes");
+          dismissToOrReplace(router, COCKTAIL_RECIPES_ROUTE);
         }}
       />
     </View>
