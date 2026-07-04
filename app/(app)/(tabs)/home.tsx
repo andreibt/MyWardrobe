@@ -201,7 +201,6 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>{t("home.dashboard.greeting")}</Text>
             <Text style={styles.title}>{t("home.dashboard.title")}</Text>
           </View>
           <View style={styles.headerActions}>
