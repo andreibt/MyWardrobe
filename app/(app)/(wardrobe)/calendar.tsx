@@ -1,7 +1,15 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
@@ -20,6 +28,9 @@ import { spacing, typography } from "../../../src/theme/tokens";
 
 const UPCOMING_LIMIT = 5;
 const WEATHER_REFRESH_MS = 6 * 60 * 60 * 1000;
+const CALENDAR_COLUMN_COUNT = 7;
+const CALENDAR_GRID_GAP = 4;
+const CONTENT_HORIZONTAL_PADDING = 20;
 const WEEKDAY_LABEL_DATES = [
   "2026-07-06",
   "2026-07-07",
@@ -50,7 +61,17 @@ export default function WardrobeCalendarScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { width: windowWidth } = useWindowDimensions();
+  const calendarCellSize = useMemo(() => {
+    const contentWidth = Math.max(0, windowWidth - CONTENT_HORIZONTAL_PADDING * 2);
+    return Math.max(
+      0,
+      Math.floor(
+        (contentWidth - CALENDAR_GRID_GAP * (CALENDAR_COLUMN_COUNT - 1)) / CALENDAR_COLUMN_COUNT
+      )
+    );
+  }, [windowWidth]);
+  const styles = useMemo(() => createStyles(theme, calendarCellSize), [calendarCellSize, theme]);
   const colors = theme.colors;
   const locale = language === "ro" ? "ro-RO" : "en-US";
   const [calendarDays, setCalendarDays] = useState<WardrobeCalendarDay[]>([]);
@@ -501,7 +522,7 @@ function getWeatherIcon(weatherCode: number): keyof typeof MaterialCommunityIcon
   return "weather-partly-cloudy";
 }
 
-const createStyles = (theme: AppTheme) => {
+const createStyles = (theme: AppTheme, calendarCellSize: number) => {
   const colors = theme.colors;
   const primaryDim = theme.isDark ? "rgba(0, 212, 255, 0.15)" : "rgba(22, 27, 34, 0.08)";
   const pressScale = [{ scale: 0.97 }];
@@ -512,7 +533,7 @@ const createStyles = (theme: AppTheme) => {
       backgroundColor: colors.background,
     },
     content: {
-      paddingHorizontal: 20,
+      paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
     },
     navBar: {
       minHeight: 44,
@@ -620,13 +641,13 @@ const createStyles = (theme: AppTheme) => {
       gap: 4,
     },
     emptyCell: {
-      width: "13.42%",
-      aspectRatio: 1,
+      width: calendarCellSize,
+      height: calendarCellSize,
       borderRadius: 10,
     },
     dayCell: {
-      width: "13.42%",
-      aspectRatio: 1,
+      width: calendarCellSize,
+      height: calendarCellSize,
       position: "relative",
       alignItems: "center",
       justifyContent: "center",
