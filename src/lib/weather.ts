@@ -24,10 +24,15 @@ const WEATHER_URL =
   "&forecast_days=7&timezone=auto";
 
 export async function getWardrobeCalendarWeather(forceRefresh = false) {
+  const snapshot = await getWardrobeCalendarWeatherSnapshot(forceRefresh);
+  return snapshot.days;
+}
+
+export async function getWardrobeCalendarWeatherSnapshot(forceRefresh = false) {
   if (!forceRefresh) {
     const cached = await readCachedWeather();
     if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-      return cached.days;
+      return cached;
     }
   }
 
@@ -46,15 +51,17 @@ export async function getWardrobeCalendarWeather(forceRefresh = false) {
     weatherCode: Number(daily.weather_code?.[index] ?? 0),
   }));
 
+  const snapshot = {
+    fetchedAt: Date.now(),
+    days,
+  };
+
   await AsyncStorage.setItem(
     CACHE_KEY,
-    JSON.stringify({
-      fetchedAt: Date.now(),
-      days,
-    })
+    JSON.stringify(snapshot)
   );
 
-  return days;
+  return snapshot;
 }
 
 async function readCachedWeather() {

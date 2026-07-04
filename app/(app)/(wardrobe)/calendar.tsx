@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
@@ -9,11 +9,17 @@ import {
   subscribeToWardrobeCalendarDays,
   type WardrobeCalendarDay,
 } from "../../../src/lib/firestore/wardrobeCalendar";
+import {
+  getWardrobeCalendarWeatherSnapshot,
+  getWeatherSummary,
+  type WeatherDay,
+} from "../../../src/lib/weather";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../../src/theme/tokens";
 
 const UPCOMING_LIMIT = 5;
+const WEATHER_REFRESH_MS = 6 * 60 * 60 * 1000;
 const WEEKDAY_LABEL_DATES = [
   "2026-07-06",
   "2026-07-07",
@@ -49,6 +55,11 @@ export default function WardrobeCalendarScreen() {
   const locale = language === "ro" ? "ro-RO" : "en-US";
   const [calendarDays, setCalendarDays] = useState<WardrobeCalendarDay[]>([]);
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
+  const [showWeather, setShowWeather] = useState(false);
+  const [weatherDays, setWeatherDays] = useState<WeatherDay[]>([]);
+  const [isWeatherLoading, setIsWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState(false);
+  const [weatherUpdatedAt, setWeatherUpdatedAt] = useState<number | null>(null);
   const today = useMemo(() => new Date(), []);
   const todayKey = formatDateKey(today);
 
@@ -65,6 +76,7 @@ export default function WardrobeCalendarScreen() {
     [calendarDays]
   );
   const monthCells = useMemo(() => createMonthCells(visibleMonth), [visibleMonth]);
+  const forecastDays = useMemo(() => weatherDays.slice(0, 7), [weatherDays]);
   const upcomingOutfits = useMemo(
     () =>
       calendarDays
@@ -90,6 +102,55 @@ export default function WardrobeCalendarScreen() {
 
   const showToday = () => {
     setVisibleMonth(startOfMonth(new Date()));
+  };
+
+  useEffect(() => {
+    if (!showWeather) {
+      return;
+    }
+
+    let isMounted = true;
+    const loadWeather = async (forceRefresh = false) => {
+      setIsWeatherLoading(true);
+      setWeatherError(false);
+      try {
+        const snapshot = await getWardrobeCalendarWeatherSnapshot(forceRefresh);
+        if (isMounted) {
+          setWeatherDays(snapshot.days);
+          setWeatherUpdatedAt(snapshot.fetchedAt);
+        }
+      } catch {
+        if (isMounted) {
+          setWeatherError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setIsWeatherLoading(false);
+        }
+      }
+    };
+
+    loadWeather();
+    const intervalId = setInterval(() => loadWeather(), WEATHER_REFRESH_MS);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [showWeather]);
+
+  const refreshWeather = async () => {
+    setIsWeatherLoading(true);
+    setWeatherError(false);
+    try {
+      const snapshot = await getWardrobeCalendarWeatherSnapshot(true);
+      setWeatherDays(snapshot.days);
+      setWeatherUpdatedAt(snapshot.fetchedAt);
+    } catch {
+      setWeatherError(true);
+    } finally {
+      setIsWeatherLoading(false);
+    }
   };
 
   return (
@@ -217,6 +278,85 @@ export default function WardrobeCalendarScreen() {
           })}
         </View>
 
+        <Pressable
+          onPress={() => setShowWeather((value) => !value)}
+          style={({ pressed }) => [styles.weatherToggle, pressed && styles.buttonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t("wardrobe_calendar.weather_forecast")}
+        >
+          <MaterialCommunityIcons name="weather-partly-cloudy" color={colors.textMuted} size={18} />
+          <Text style={styles.weatherToggleText}>{t("wardrobe_calendar.weather_forecast")}</Text>
+          {isWeatherLoading && showWeather ? (
+            <ActivityIndicator color={colors.primary} size="small" />
+          ) : (
+            <MaterialCommunityIcons
+              name={showWeather ? "chevron-up" : "chevron-down"}
+              color={colors.textMuted}
+              size={18}
+            />
+          )}
+        </Pressable>
+
+        {showWeather ? (
+          <View style={styles.weatherSection}>
+            <View style={styles.weatherRefresh}>
+              <Text
+                style={[styles.weatherUpdatedText, weatherError && styles.weatherErrorText]}
+                numberOfLines={1}
+              >
+                {weatherError
+                  ? t("wardrobe_calendar.weather_error")
+                  : t("wardrobe_calendar.weather_updated", {
+                      time: weatherUpdatedAt
+                        ? formatWeatherUpdatedAt(weatherUpdatedAt, locale)
+                        : t("wardrobe_calendar.weather_updating"),
+                    })}
+              </Text>
+              <Pressable
+                onPress={refreshWeather}
+                disabled={isWeatherLoading}
+                style={({ pressed }) => [styles.weatherRefreshButton, pressed && styles.buttonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t("wardrobe_calendar.weather_refresh_button")}
+              >
+                <MaterialCommunityIcons name="refresh" color={colors.textMuted} size={13} />
+                <Text style={styles.weatherRefreshText}>
+                  {isWeatherLoading
+                    ? t("wardrobe_calendar.weather_refreshing")
+                    : t("wardrobe_calendar.weather_refresh_button")}
+                </Text>
+              </Pressable>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.weatherStrip}
+            >
+              {forecastDays.map((day, index) => (
+                <View key={day.date} style={styles.weatherDay}>
+                  <Text style={styles.weatherDayName}>
+                    {formatWeatherDayName(day.date, locale)}
+                  </Text>
+                  <MaterialCommunityIcons
+                    name={getWeatherIcon(day.weatherCode)}
+                    color={colors.text}
+                    size={22}
+                    style={styles.weatherDayIcon}
+                  />
+                  <Text style={styles.weatherDayTemp}>{Math.round(day.max)}°</Text>
+                  <Text style={styles.weatherDayDesc} numberOfLines={1}>
+                    {getWeatherSummary(day.weatherCode)}
+                  </Text>
+                  {index === 0 ? (
+                    <Text style={styles.weatherDayHighlight}>{t("wardrobe_calendar.today")}</Text>
+                  ) : null}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         <View style={styles.sectionLabel}>
           <Text style={styles.sectionTitle}>{t("wardrobe_calendar.upcoming_outfits")}</Text>
         </View>
@@ -319,12 +459,46 @@ function formatUpcomingDate(dateKey: string, locale: string) {
   });
 }
 
+function formatWeatherDayName(dateKey: string, locale: string) {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(locale, { weekday: "short" });
+}
+
+function formatWeatherUpdatedAt(timestamp: number, locale: string) {
+  return new Date(timestamp).toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function summarizeConfigs(configNames: string[]) {
   if (configNames.length <= 2) {
     return configNames.join(", ");
   }
 
   return `${configNames.slice(0, 2).join(", ")} +${configNames.length - 2}`;
+}
+
+function getWeatherIcon(weatherCode: number): keyof typeof MaterialCommunityIcons.glyphMap {
+  const summary = getWeatherSummary(weatherCode);
+  if (summary === "Clear") {
+    return "weather-sunny";
+  }
+  if (summary === "Clouds") {
+    return "weather-cloudy";
+  }
+  if (summary === "Fog") {
+    return "weather-fog";
+  }
+  if (summary === "Rain") {
+    return "weather-pouring";
+  }
+  if (summary === "Snow") {
+    return "weather-snowy";
+  }
+  if (summary === "Storm") {
+    return "weather-lightning-rainy";
+  }
+  return "weather-partly-cloudy";
 }
 
 const createStyles = (theme: AppTheme) => {
@@ -453,6 +627,7 @@ const createStyles = (theme: AppTheme) => {
     dayCell: {
       width: "13.42%",
       aspectRatio: 1,
+      position: "relative",
       alignItems: "center",
       justifyContent: "center",
       gap: 2,
@@ -489,6 +664,112 @@ const createStyles = (theme: AppTheme) => {
       lineHeight: 8,
       fontWeight: "600",
       textAlign: "center",
+    },
+    weatherToggle: {
+      minHeight: 44,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      marginTop: spacing.sm,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    weatherToggleText: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
+    },
+    weatherSection: {
+      gap: spacing.xs,
+      paddingTop: spacing.xs,
+    },
+    weatherRefresh: {
+      minHeight: 32,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: spacing.xs,
+    },
+    weatherUpdatedText: {
+      flex: 1,
+      color: colors.muted,
+      fontSize: 10,
+      lineHeight: 14,
+      fontWeight: "600",
+      textAlign: "right",
+    },
+    weatherErrorText: {
+      color: colors.danger,
+    },
+    weatherRefreshButton: {
+      minHeight: 28,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingVertical: 4,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: "transparent",
+    },
+    weatherRefreshText: {
+      color: colors.textMuted,
+      fontSize: 11,
+      lineHeight: 14,
+      fontWeight: "700",
+    },
+    weatherStrip: {
+      gap: spacing.xs,
+      paddingBottom: 4,
+    },
+    weatherDay: {
+      width: 72,
+      alignItems: "center",
+      paddingVertical: 10,
+      paddingHorizontal: 6,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    weatherDayName: {
+      color: colors.textMuted,
+      fontSize: 10,
+      lineHeight: 13,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    weatherDayIcon: {
+      marginVertical: 4,
+    },
+    weatherDayTemp: {
+      color: colors.text,
+      fontSize: 15,
+      lineHeight: 19,
+      fontWeight: "700",
+    },
+    weatherDayDesc: {
+      maxWidth: "100%",
+      marginTop: 2,
+      color: colors.muted,
+      fontSize: 9,
+      lineHeight: 12,
+      fontWeight: "500",
+    },
+    weatherDayHighlight: {
+      marginTop: 2,
+      color: colors.primary,
+      fontSize: 9,
+      lineHeight: 12,
+      fontWeight: "700",
     },
     sectionLabel: {
       paddingTop: 20,

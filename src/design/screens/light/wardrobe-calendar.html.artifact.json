@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/light/wardrobe-calendar.html",
+  "entry": "screens/light/wardrobe-calendar.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-04T16:24:51.611Z",
+  "updatedAt": "2026-07-04T16:24:51.611Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}
