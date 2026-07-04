@@ -2,10 +2,12 @@ import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
-import { colors } from "../../../src/theme/tokens";
+import { useTheme } from "../../../src/providers/ThemeProvider";
 
 export default function TabsLayout() {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   return (
     <Tabs

@@ -10,6 +10,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DraggableFlatList, {
   NestableDraggableFlatList,
   NestableScrollContainer,
@@ -39,8 +40,9 @@ import {
   type WardrobeItem,
 } from "../../../src/lib/firestore/wardrobeItems";
 import { useAuth } from "../../../src/providers/AuthProvider";
+import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
 import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
-import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
+import { radius, spacing, typography } from "../../../src/theme/tokens";
 
 const LAYERS: TryOnItem["layer"][] = ["top", "middle", "bottom"];
 // Nestable components call findNodeHandle, which errors on web.
@@ -54,6 +56,10 @@ const DraggableList =
 export default function TryOnScreen() {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const colors = theme.colors;
   const { activeConfig, setActiveConfig } = useTryOnConfig();
   const [items, setItems] = useState<TryOnItem[]>([]);
   const [configs, setConfigs] = useState<TryOnConfig[]>([]);
@@ -65,7 +71,7 @@ export default function TryOnScreen() {
   const { width } = useWindowDimensions();
   const numColumns = width >= 900 ? 3 : 2;
   const tileSize = useMemo(
-    () => (width - spacing.lg * 2 - spacing.sm * (numColumns - 1)) / numColumns,
+    () => (width - 40 - spacing.sm * (numColumns - 1)) / numColumns,
     [width, numColumns]
   );
 
@@ -294,7 +300,7 @@ export default function TryOnScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + spacing.sm, spacing.lg) }]}>
         <Text style={styles.title}>{t("try_on.title")}</Text>
         <Text style={styles.subtitle}>{t("try_on.subtitle")}</Text>
         <Pressable
@@ -316,7 +322,10 @@ export default function TryOnScreen() {
       </View>
 
       <ScrollContainer
-        contentContainerStyle={styles.layers}
+        contentContainerStyle={[
+          styles.layers,
+          { paddingBottom: Math.max(insets.bottom + spacing.xl, spacing.xl) },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {items.length === 0 ? (
@@ -416,19 +425,24 @@ export default function TryOnScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => {
+  const colors = theme.colors;
+  const primaryDim = theme.isDark ? "rgba(0, 212, 255, 0.15)" : "rgba(22, 27, 34, 0.08)";
+
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
   header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingHorizontal: 20,
     gap: spacing.xs,
   },
   title: {
     color: colors.text,
-    ...typography.h1,
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: "700",
   },
   subtitle: {
     color: colors.muted,
@@ -437,16 +451,16 @@ const styles = StyleSheet.create({
   suggestionButton: {
     alignSelf: "flex-start",
     marginTop: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 9,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
   },
   suggestionButtonDisabled: {
     opacity: 0.6,
   },
   suggestionButtonText: {
-    color: colors.background,
+    color: colors.logoTint,
     ...typography.caption,
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -456,9 +470,8 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   layers: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
     gap: spacing.lg,
   },
   layerSection: {
@@ -481,8 +494,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    backgroundColor: colors.surface2,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
@@ -494,7 +507,7 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: 150,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface3,
   },
   cardFooter: {
     padding: spacing.sm,
@@ -515,10 +528,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
   layerChipActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: primaryDim,
     borderColor: colors.primary,
   },
   layerChipText: {
@@ -526,14 +539,14 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   layerChipTextActive: {
-    color: colors.surface,
+    color: colors.primary,
   },
   deleteButton: {
     alignSelf: "flex-start",
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: colors.dangerSurface,
+    backgroundColor: theme.isDark ? "#3B1720" : "#FFF2F0",
   },
   deleteText: {
     color: colors.danger,
@@ -577,19 +590,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     padding: spacing.sm,
     color: colors.text,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
   configSaveButton: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
   },
   configSaveDisabled: {
     opacity: 0.6,
   },
   configSaveText: {
-    color: colors.background,
+    color: colors.logoTint,
     ...typography.caption,
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -613,10 +626,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
   configChipActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: primaryDim,
     borderColor: colors.primary,
   },
   configChipText: {
@@ -624,13 +637,14 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   configChipTextActive: {
-    color: colors.surface,
+    color: colors.primary,
   },
   configDeleteText: {
     color: colors.danger,
     ...typography.caption,
   },
-});
+  });
+};
 
 function createSuggestionConfigName() {
   const now = new Date();

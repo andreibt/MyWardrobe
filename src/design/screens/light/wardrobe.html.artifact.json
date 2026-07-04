@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "wardrobe.html",
+  "entry": "wardrobe.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-03T11:59:03.028Z",
+  "updatedAt": "2026-07-03T11:59:03.028Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

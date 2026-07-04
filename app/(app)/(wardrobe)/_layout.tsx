@@ -2,10 +2,12 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
-import { colors } from "../../../src/theme/tokens";
+import { useTheme } from "../../../src/providers/ThemeProvider";
 
 export default function WardrobeTabsLayout() {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   return (
     <Tabs
@@ -50,6 +52,15 @@ export default function WardrobeTabsLayout() {
           title: t("tabs.try_on"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="tshirt-crew-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: t("tabs.calendar"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="calendar-month-outline" color={color} size={size} />
           ),
         }}
       />

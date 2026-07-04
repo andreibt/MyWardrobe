@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/light/pantry.html",
+  "entry": "screens/light/pantry.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-03T21:58:49.951Z",
+  "updatedAt": "2026-07-03T21:58:49.951Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

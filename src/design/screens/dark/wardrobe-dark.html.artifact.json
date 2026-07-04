@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/wardrobe-dark.html",
+  "entry": "screens/wardrobe-dark.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-03T13:02:48.023Z",
+  "updatedAt": "2026-07-03T13:02:48.023Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

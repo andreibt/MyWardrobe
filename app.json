@@ -12,7 +12,12 @@
       "package": "com.anonymous.mywardrobe"
     },
     "ios": {
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "bundleIdentifier": "com.anonymous.mywardrobe",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Allow MyWardrobe to choose photos from your library for wardrobe and fridge items.",
+        "NSPhotoLibraryAddUsageDescription": "Allow MyWardrobe to save updated item photos to your library when needed."
+      }
     }
   }
 }

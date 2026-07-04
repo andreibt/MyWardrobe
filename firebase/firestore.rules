@@ -52,6 +52,26 @@ service cloud.firestore {
         && request.query.where('ownerId', '==', request.auth.uid);
     }
 
+    match /pantryItems/{itemId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
+    match /cocktailItems/{itemId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
     match /fridgeTags/{tagId} {
       allow create: if request.auth != null
         && request.resource.data.ownerId == request.auth.uid;
@@ -70,6 +90,45 @@ service cloud.firestore {
       allow list: if request.auth != null
         && request.query != null
         && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
+    match /cocktailRecipes/{recipeId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.query != null
+        && request.query.where('ownerId', '==', request.auth.uid);
+    }
+
+    match /shoppingLists/{ownerId} {
+      allow create: if request.auth != null
+        && ownerId == request.auth.uid
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read: if request.auth != null
+        && ownerId == request.auth.uid;
+      allow delete: if request.auth != null
+        && ownerId == request.auth.uid
+        && resource.data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+        && ownerId == request.auth.uid
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    match /wardrobeCalendarDays/{dayId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && dayId == request.auth.uid + '_' + request.resource.data.date;
+      allow read: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == request.auth.uid
+        && dayId == request.auth.uid + '_' + request.resource.data.date;
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
     }
   }
 }

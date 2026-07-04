@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Home — PolarNest Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --fg: #0d1117;
+      --accent: #161b22;
+      --surface: #eceef1;
+      --muted: #8d9094;
+      --border: #d5d7da;
+      --radius: 8px;
+      --radius-lg: 14px;
+      --space: 8px;
+      --font: 'Inter', system-ui, -apple-system, Segoe UI, Helvetica Neue, Arial, sans-serif;
+      --tab-bar: rgba(245,247,250,0.96);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background: var(--bg);
+      font: 400 15px/1.5 var(--font);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ---- phone frame ---- */
+    .phone {
+      max-width: 390px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      position: relative;
+    }
+
+    /* ---- status bar ---- */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg);
+      flex-shrink: 0;
+    }
+    .status-bar .time { font-weight: 700; }
+    .status-icons { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+
+    /* ---- header ---- */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 20px 16px;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .header .greeting {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .header-actions button {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--fg);
+      font-size: 18px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s;
+    }
+    .header-actions button:hover { background: var(--surface); }
+
+    /* ---- scrollable content ---- */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px 100px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ---- stat cards row ---- */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 16px 12px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .stat-card .stat-num {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    .stat-card .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .stat-card .stat-num.wardrobe-num { color: var(--accent); }
+    .stat-card .stat-num.fridge-num { color: var(--accent); opacity: 0.65; }
+
+    /* ---- module cards ---- */
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .module-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 20px 16px;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      color: var(--fg);
+      transition: transform 0.15s;
+      display: flex;
+      flex-direction: column;
+    }
+    .module-card:active { transform: scale(0.97); }
+    .module-card .mc-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+    .module-card .mc-icon.wardrobe { background: rgba(22,27,34,0.08); color: var(--accent); }
+    .module-card .mc-icon.fridge { background: rgba(22,27,34,0.06); color: var(--accent); }
+    .module-card .mc-title {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .module-card .mc-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .module-card .mc-count {
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent);
+    }
+
+    /* ---- section divider ---- */
+    .section-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0 8px;
+    }
+    .section-label h2 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .section-label a {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* ---- recent items ---- */
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+    }
+    .recent-item .ri-img {
+      width: 44px; height: 44px;
+      border-radius: 6px;
+      background: var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--muted);
+    }
+    .recent-item .ri-img img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+    .recent-item .ri-info { flex: 1; min-width: 0; }
+    .recent-item .ri-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .recent-item .ri-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .recent-item .ri-tag {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .ri-tag.wardrobe-tag {
+      background: rgba(22,27,34,0.08);
+      color: var(--accent);
+    }
+    .ri-tag.fridge-tag {
+      background: rgba(22,27,34,0.06);
+      color: var(--accent);
+    }
+    .ri-tag.expiring-tag {
+      background: rgba(22,27,34,0.08);
+      color: var(--accent);
+    }
+
+    /* ---- empty state ---- */
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+    }
+    .empty-state .empty-icon {
+      font-size: 40px;
+      opacity: 0.3;
+      margin-bottom: 12px;
+    }
+    .empty-state h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .empty-state p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .empty-state button {
+      margin-top: 16px;
+      background: var(--accent);
+      color: var(--bg);
+      border: 0;
+      padding: 10px 24px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 14px;
+      font-family: var(--font);
+      cursor: pointer;
+    }
+
+    /* ---- bottom tab bar ---- */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0 max(env(safe-area-inset-bottom, 8px), 8px);
+      background: var(--tab-bar);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      transition: color 0.15s;
+      padding: 4px 12px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    .tab-item .tab-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+    .tab-item.active {
+      color: var(--accent);
+    }
+
+    /* ---- quick add FAB ---- */
+    .fab {
+      position: fixed;
+      bottom: 76px;
+      right: calc(50% - 175px);
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--bg);
+      border: 0;
+      font-size: 26px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(22,27,34,0.20);
+      display: grid;
+      place-items: center;
+      transition: transform 0.15s;
+      z-index: 10;
+      text-decoration: none;
+    }
+    .fab:active { transform: scale(0.92); }
+    @media (min-width: 430px) {
+      .fab { right: calc(50% - 187px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="status-icons">&#9679;&#9679;&#9679;</span>
+    </div>
+
+    <div class="header">
+      <div>
+        <div class="greeting">Good morning</div>
+        <h1>My Inventory</h1>
+      </div>
+      <div class="header-actions">
+        <button type="button" aria-label="Search">&#8981;</button>
+        <button type="button" aria-label="Settings">&#9881;</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-num">42</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num wardrobe-num">28</div>
+          <div class="stat-label">Wardrobe</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num fridge-num">14</div>
+          <div class="stat-label">Fridge</div>
+        </div>
+      </div>
+
+      <!-- module quick cards -->
+      <div class="module-grid">
+        <a class="module-card" href="wardrobe.html">
+          <div class="mc-icon wardrobe">&#9825;</div>
+          <div class="mc-title">Wardrobe</div>
+          <div class="mc-sub">28 items &middot; 4 categories</div>
+          <div class="mc-count">Browse &rarr;</div>
+        </a>
+        <a class="module-card" href="../../fridge.html">
+          <div class="mc-icon fridge">&#9733;</div>
+          <div class="mc-title">Fridge</div>
+          <div class="mc-sub">14 items &middot; 3 expiring</div>
+          <div class="mc-count">3 expiring &rarr;</div>
+        </a>
+      </div>
+
+      <!-- recent activity -->
+      <div>
+        <div class="section-label">
+          <h2>Recent activity</h2>
+          <a href="#">See all</a>
+        </div>
+        <div class="recent-list">
+          <div class="recent-item">
+            <div class="ri-img">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-4a4 4 0 0 1-4-4V1"/><path d="M4 7h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/></svg>
+            </div>
+            <div class="ri-info">
+              <div class="ri-name">Cashmere Sweater</div>
+              <div class="ri-meta">Added 2h ago &middot; Wardrobe</div>
+            </div>
+            <span class="ri-tag wardrobe-tag">New</span>
+          </div>
+          <div class="recent-item">
+            <div class="ri-img">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="ri-info">
+              <div class="ri-name">Organic Almond Milk</div>
+              <div class="ri-meta">Added 4h ago &middot; Fridge</div>
+            </div>
+            <span class="ri-tag fridge-tag">Fridge</span>
+          </div>
+          <div class="recent-item">
+            <div class="ri-img">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <div class="ri-info">
+              <div class="ri-name">Greek Yogurt (x2)</div>
+              <div class="ri-meta">Expires tomorrow</div>
+            </div>
+            <span class="ri-tag expiring-tag">Expiring</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- empty state for demo -->
+      <div class="empty-state">
+        <div class="empty-icon">&#9744;</div>
+        <h3>Everything organized</h3>
+        <p>Your inventory is up to date. Add items to keep tracking.</p>
+        <button type="button" onclick="location.href='add-item.html'">Add item</button>
+      </div>
+
+    </div>
+
+    <!-- tab bar -->
+    <nav class="tab-bar">
+      <a class="tab-item active" href="home.html">
+        <span class="tab-icon">&#9650;</span>
+        <span>Home</span>
+      </a>
+      <a class="tab-item" href="wardrobe.html">
+        <span class="tab-icon">&#9825;</span>
+        <span>Wardrobe</span>
+      </a>
+      <a class="tab-item" href="../../fridge.html">
+        <span class="tab-icon">&#9733;</span>
+        <span>Fridge</span>
+      </a>
+      <a class="tab-item" href="#">
+        <span class="tab-icon">&#8981;</span>
+        <span>Search</span>
+      </a>
+      <a class="tab-item" href="#">
+        <span class="tab-icon">&#9881;</span>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <a class="fab" href="../../add-item.html" aria-label="Add item">+</a>
+
+  </div>
+</body>
+</html>

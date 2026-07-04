@@ -2,10 +2,12 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
-import { colors } from "../../../src/theme/tokens";
+import { useTheme } from "../../../src/providers/ThemeProvider";
 
 export default function FridgeTabsLayout() {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const colors = theme.colors;
 
   return (
     <Tabs
@@ -15,14 +17,23 @@ export default function FridgeTabsLayout() {
         tabBarInactiveTintColor: colors.muted,
         headerTintColor: colors.text,
         headerStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.surface2,
+          borderBottomColor: colors.border,
         },
         headerTitleStyle: {
           color: colors.text,
+          fontSize: 17,
+          fontWeight: "700",
         },
         tabBarStyle: {
-          backgroundColor: colors.surface,
+          height: 64,
+          paddingTop: 6,
+          backgroundColor: colors.surface2,
           borderTopColor: colors.border,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
         },
       }}
     >
@@ -50,6 +61,15 @@ export default function FridgeTabsLayout() {
           title: t("tabs.recipes"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="book-open-page-variant-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="shopping-list"
+        options={{
+          title: t("tabs.shopping_list"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="cart-outline" color={color} size={size} />
           ),
         }}
       />

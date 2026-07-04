@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/assistant-dark.html",
+  "entry": "screens/assistant-dark.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-03T13:03:04.612Z",
+  "updatedAt": "2026-07-03T13:03:04.612Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

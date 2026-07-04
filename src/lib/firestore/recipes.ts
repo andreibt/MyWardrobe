@@ -12,6 +12,16 @@ import {
 import { db } from "../firebase";
 import type { QuantityType } from "./fridgeItems";
 
+type RecipeIngredientItem = {
+  id: string;
+  name: string;
+  description: string;
+  quantityType: QuantityType;
+  calories?: number;
+  imageUrl: string;
+  imageSerialized?: string;
+};
+
 export type RecipeIngredient = {
   fridgeItemId: string;
   name: string;
@@ -19,6 +29,8 @@ export type RecipeIngredient = {
   quantityType: QuantityType;
   description: string;
   calories: number;
+  imageUrl?: string;
+  imageSerialized?: string;
 };
 
 export type Recipe = {
@@ -36,14 +48,41 @@ type UpdateRecipe = Partial<NewRecipe>;
 
 const recipesCollection = collection(db, "recipes");
 const sanitizeIngredients = (ingredients: RecipeIngredient[]) =>
-  ingredients.map(({ fridgeItemId, name, quantity, quantityType, description, calories }) => ({
+  ingredients.map(({ fridgeItemId, name, quantity, quantityType, description, calories, imageUrl, imageSerialized }) => ({
     fridgeItemId,
     name,
     quantity,
     quantityType,
     description,
     calories,
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(imageSerialized ? { imageSerialized } : {}),
   }));
+
+export const hydrateRecipeIngredients = (
+  ingredients: RecipeIngredient[],
+  items: RecipeIngredientItem[]
+) => {
+  const itemsById = new Map(items.map((item) => [item.id, item]));
+
+  return ingredients.map((ingredient) => {
+    const item = itemsById.get(ingredient.fridgeItemId);
+
+    if (!item) {
+      return ingredient;
+    }
+
+    return {
+      ...ingredient,
+      name: item.name,
+      quantityType: item.quantityType,
+      description: item.description,
+      calories: item.calories ?? 0,
+      imageUrl: item.imageUrl,
+      imageSerialized: item.imageSerialized,
+    };
+  });
+};
 
 export function subscribeToRecipes(ownerId: string, onChange: (recipes: Recipe[]) => void) {
   const recipesQuery = query(recipesCollection, where("ownerId", "==", ownerId));

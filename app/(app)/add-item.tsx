@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
@@ -17,12 +18,14 @@ import {
   View,
 } from "react-native";
 import { useMemo, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TagSelector } from "../../src/components/TagSelector";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { addWardrobeItem } from "../../src/lib/firestore/wardrobeItems";
 import { useAuth } from "../../src/providers/AuthProvider";
-import { colors, radius, spacing, typography } from "../../src/theme/tokens";
+import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
+import { radius, spacing, typography } from "../../src/theme/tokens";
 
 const itemSchema = z.object({
   title: z.string().min(2, "validation.title_required"),
@@ -52,13 +55,13 @@ type DriveFile = {
 };
 
 const MAX_IMAGE_BYTES = 900_000;
-const COMPRESSION_STEPS = [
+const COMPRESSION_STEPS: Array<{ quality: number; maxWidth?: number }> = [
   { quality: 0.8 },
   { maxWidth: 1600, quality: 0.75 },
   { maxWidth: 1200, quality: 0.65 },
   { maxWidth: 900, quality: 0.55 },
   { maxWidth: 700, quality: 0.45 },
-] as const;
+];
 
 const getBase64Size = (base64: string) => {
   const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
@@ -116,6 +119,10 @@ export default function AddItemScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const colors = theme.colors;
   const {
     control,
     handleSubmit,
@@ -291,11 +298,45 @@ export default function AddItemScreen() {
       behavior={Platform.select({ ios: "padding", android: undefined })}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>{t("add.title")}</Text>
-          <Text style={styles.subtitle}>{t("add.subtitle")}</Text>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: Math.max(insets.top + spacing.sm, spacing.lg),
+            paddingBottom: Math.max(insets.bottom + spacing.lg, spacing.xl),
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.navBar}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t("add.cancel")}
+          >
+            <MaterialCommunityIcons name="arrow-left" color={colors.text} size={20} />
+          </Pressable>
+          <Text style={styles.navTitle}>{t("add.title")}</Text>
         </View>
+
+        <Pressable
+          onPress={handleUploadImage}
+          disabled={isImageProcessing}
+          style={({ pressed }) => [styles.photoUpload, pressed && styles.buttonPressed]}
+        >
+          {isImageProcessing ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : imageSerialized ? (
+            <Image source={{ uri: imageSerialized }} style={styles.photoPreview} />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="camera-plus-outline" color={colors.muted} size={34} />
+              <Text style={styles.uploadLabel}>{t("add.upload.button")}</Text>
+              <Text style={styles.uploadHint}>{t("add.subtitle")}</Text>
+            </>
+          )}
+        </Pressable>
 
         <View style={styles.card}>
           <Text style={styles.label}>{t("add.label.title")}</Text>
@@ -314,7 +355,7 @@ export default function AddItemScreen() {
             )}
           />
           {errors.title ? (
-            <Text style={styles.error}>{t(errors.title.message)}</Text>
+            <Text style={styles.error}>{t(errors.title.message ?? "")}</Text>
           ) : null}
 
           <Text style={styles.label}>{t("add.label.description")}</Text>
@@ -334,7 +375,7 @@ export default function AddItemScreen() {
             )}
           />
           {errors.description ? (
-            <Text style={styles.error}>{t(errors.description.message)}</Text>
+            <Text style={styles.error}>{t(errors.description.message ?? "")}</Text>
           ) : null}
 
           <Text style={styles.label}>{t("add.label.image_url")}</Text>
@@ -463,7 +504,7 @@ export default function AddItemScreen() {
             )}
           />
           {errors.color ? (
-            <Text style={styles.error}>{t(errors.color.message)}</Text>
+            <Text style={styles.error}>{t(errors.color.message ?? "")}</Text>
           ) : null}
 
           <TagSelector
@@ -497,48 +538,91 @@ export default function AddItemScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => {
+  const colors = theme.colors;
+
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
   content: {
     flexGrow: 1,
-    padding: spacing.lg,
+    paddingHorizontal: 20,
     gap: spacing.lg,
   },
-  header: {
+  navBar: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
   },
-  title: {
-    color: colors.text,
-    ...typography.h1,
-  },
-  subtitle: {
-    color: colors.muted,
-    ...typography.body,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+  backButton: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 19,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: spacing.sm,
+    backgroundColor: colors.surface2,
+  },
+  navTitle: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: "600",
+  },
+  photoUpload: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    overflow: "hidden",
+    borderRadius: 16,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  photoPreview: {
+    width: "100%",
+    height: "100%",
+  },
+  uploadLabel: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
+  },
+  uploadHint: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 15,
+    textAlign: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  card: {
+    gap: spacing.md,
   },
   label: {
-    color: colors.text,
+    color: colors.textMuted,
     ...typography.caption,
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
+    fontWeight: "600",
   },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.sm,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     color: colors.text,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
+    fontSize: 15,
+    lineHeight: 20,
   },
   multilineInput: {
     minHeight: 96,
@@ -550,7 +634,7 @@ const styles = StyleSheet.create({
     marginVertical: spacing.sm,
   },
   secondaryButton: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surface2,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -567,8 +651,8 @@ const styles = StyleSheet.create({
   previewImage: {
     width: "100%",
     height: 180,
-    borderRadius: radius.sm,
-    backgroundColor: colors.card,
+    borderRadius: 10,
+    backgroundColor: colors.surface3,
     marginTop: spacing.xs,
   },
   driveItem: {
@@ -577,14 +661,14 @@ const styles = StyleSheet.create({
   driveImage: {
     width: "100%",
     height: 120,
-    borderRadius: radius.sm,
-    backgroundColor: colors.card,
+    borderRadius: 10,
+    backgroundColor: colors.surface3,
   },
   drivePlaceholder: {
     width: "100%",
     height: 120,
-    borderRadius: radius.sm,
-    backgroundColor: colors.card,
+    borderRadius: 10,
+    backgroundColor: colors.surface3,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -594,14 +678,14 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   error: {
-    color: "#B00020",
+    color: colors.danger,
     ...typography.caption,
   },
   button: {
     marginTop: spacing.sm,
     backgroundColor: colors.primary,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: "center",
   },
   buttonPressed: {
@@ -611,7 +695,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: colors.background,
+    color: colors.logoTint,
     ...typography.h2,
   },
   link: {
@@ -619,4 +703,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     ...typography.body,
   },
-});
+  });
+};

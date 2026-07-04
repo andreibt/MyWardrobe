@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { addTag, deleteTag, subscribeToTags, type WardrobeTag } from "../lib/firestore/tags";
-import { colors, radius, spacing, typography } from "../theme/tokens";
+import { useTheme, type AppTheme } from "../providers/ThemeProvider";
+import { radius, spacing, typography } from "../theme/tokens";
 
 type TagSelectorProps = {
   ownerId: string | null;
@@ -13,6 +14,9 @@ type TagSelectorProps = {
 
 export function TagSelector({ ownerId, selectedTags, onChange }: TagSelectorProps) {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const colors = theme.colors;
   const [tags, setTags] = useState<WardrobeTag[]>([]);
   const [newTag, setNewTag] = useState("");
   const [isManaging, setIsManaging] = useState(false);
@@ -159,7 +163,10 @@ export function TagSelector({ ownerId, selectedTags, onChange }: TagSelectorProp
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => {
+  const colors = theme.colors;
+
+  return StyleSheet.create({
   section: {
     gap: spacing.sm,
   },
@@ -195,7 +202,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
   tagChipActive: {
     backgroundColor: colors.primary,
@@ -206,7 +213,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   tagTextActive: {
-    color: colors.surface,
+    color: colors.logoTint,
   },
   manageSection: {
     gap: spacing.sm,
@@ -223,7 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     padding: spacing.sm,
     color: colors.text,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
   addButton: {
     paddingVertical: spacing.xs,
@@ -232,7 +239,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   addButtonText: {
-    color: colors.background,
+    color: colors.logoTint,
     ...typography.caption,
   },
   manageList: {
@@ -258,4 +265,5 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.6,
   },
-});
+  });
+};

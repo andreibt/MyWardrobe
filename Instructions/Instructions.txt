@@ -1,2 +1,4 @@
-Make the fridge list with the same layout as wardrobe-list, pagination, filters by tags, grid or list view and Add Button to add new fridge item. The Fridge item
-form will have Name, Description, quantity, quantity type, expiration date, calories, image and tags. Quantity type will be a dropdown with g, kg, mL, L or unit
+Update the instructions/design.md file with two new sections. Create a Pantry section and a Cocktails section.
+The sections will respect the same structure as the fridge component with a list screen and add or edit screen.
+Both sections will have the list component similar to the one in the fridge-list component.
+Data structure for the sections will be the same as the fridge-list component. Pantry items will not have calories.

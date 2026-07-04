@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Pasta Carbonara — PolarNest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#f5f7fa; --fg:#0d1117; --accent:#161b22; --surface:#eceef1; --muted:#8d9094; --border:#d5d7da; --radius:10px; --radius-lg:16px; --radius-full:9999px; --font:'Inter',system-ui,-apple-system,sans-serif; --success:#46D37B; --sdim:rgba(70,211,123,0.12); --error:#F56A6A; --edim:rgba(245,106,106,0.10); --tab-bar:rgba(245,247,250,0.96); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html,body { width:100%; min-height:100vh; background:var(--bg); font:400 15px/1.6 var(--font); color:var(--fg); -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+    .phone { max-width:390px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; background:var(--bg); position:relative; }
+    .status-bar { display:flex; justify-content:space-between; padding:12px 20px 6px; font-size:12px; font-weight:600; color:var(--fg); flex-shrink:0; }
+    .nav-bar { display:flex; align-items:center; padding:0 20px 8px; gap:8px; flex-shrink:0; }
+    .nav-bar .back-btn { width:36px;height:36px; border-radius:50%; border:1px solid var(--border); background:transparent; font-size:18px; cursor:pointer; display:grid; place-items:center; color:var(--fg); text-decoration:none; transition:background 0.15s; }
+    .nav-bar .back-btn:hover { background:var(--surface); }
+    .nav-bar .action { width:36px;height:36px; border-radius:50%; border:0; background:transparent; color:var(--muted); font-size:18px; cursor:pointer; display:grid; place-items:center; margin-left:auto; }
+    .content { flex:1; overflow-y:auto; padding:0 0 100px; }
+    .hero { width:100%; height:220px; background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:64px; color:var(--muted); position:relative; }
+    .hero .hero-badge { position:absolute; bottom:12px; left:20px; display:flex; gap:8px; }
+    .hero .hero-badge span { padding:5px 12px; border-radius:var(--radius-full); font-size:11px; font-weight:600; background:rgba(255,255,255,0.92); backdrop-filter:blur(8px); color:var(--fg); box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+    .detail { padding:20px 20px 100px; }
+    .detail h1 { font-size:24px; font-weight:700; letter-spacing:-0.02em; line-height:1.2; margin-bottom:4px; }
+    .detail .d-meta { display:flex; gap:16px; font-size:13px; color:var(--muted); margin-bottom:20px; flex-wrap:wrap; }
+    .detail .d-meta span { display:flex; align-items:center; gap:4px; }
+    .d-section { margin-bottom:24px; }
+    .d-section h2 { font-size:16px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+    .d-section h2 .count { font-size:12px; color:var(--muted); font-weight:400; }
+    .ingredient-list { display:flex; flex-direction:column; gap:6px; }
+    .ing-row { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:var(--radius); transition:background 0.15s; }
+    .ing-row.avail { background:var(--sdim); }
+    .ing-row.missing { background:var(--edim); }
+    .ing-row .ing-status { width:20px;height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+    .ing-row.avail .ing-status { background:var(--success); color:#fff; }
+    .ing-row.missing .ing-status { background:var(--error); color:#fff; }
+    .ing-row .ing-name { font-size:14px; font-weight:500; flex:1; }
+    .ing-row .ing-amount { font-size:12px; color:var(--muted); }
+    .ing-row .ing-tag { font-size:10px; font-weight:600; padding:2px 8px; border-radius:var(--radius-full); text-transform:uppercase; letter-spacing:0.04em; }
+    .ing-row.avail .ing-tag { background:var(--sdim); color:var(--success); }
+    .ing-row.missing .ing-tag { background:var(--edim); color:var(--error); }
+    .instruction-list { display:flex; flex-direction:column; gap:10px; counter-reset:step; }
+    .instruction-step { display:flex; gap:12px; padding:14px; border-radius:var(--radius); background:#fff; border:1px solid var(--border); box-shadow:0 1px 2px rgba(0,0,0,0.03); }
+    .instruction-step .step-num { width:28px;height:28px; border-radius:50%; background:var(--accent); color:#fff; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .instruction-step .step-text { font-size:14px; line-height:1.6; color:var(--fg); flex:1; }
+    .buy-banner { display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:var(--radius); background:var(--edim); border:1px solid rgba(245,106,106,0.2); margin-bottom:20px; }
+    .buy-banner .b-icon { font-size:20px; flex-shrink:0; }
+    .buy-banner .b-text { font-size:13px; color:var(--error); }
+    .buy-banner .b-text strong { font-weight:600; }
+    .buy-banner .b-btn { margin-left:auto; padding:8px 16px; border-radius:var(--radius-full); border:0; background:var(--error); color:#fff; font:600 12px var(--font); cursor:pointer; flex-shrink:0; }
+    .start-btn { width:100%; padding:16px; border-radius:var(--radius-lg); border:0; background:var(--accent); color:#fff; font:600 16px var(--font); cursor:pointer; transition:opacity 0.15s; margin-top:4px; }
+    .start-btn:hover { opacity:0.85; }
+    .tab-bar { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:390px; display:flex; justify-content:space-around; align-items:center; padding:8px 0 max(env(safe-area-inset-bottom,8px),8px); background:var(--tab-bar); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-top:1px solid var(--border); }
+    .tab-item { display:flex; flex-direction:column; align-items:center; gap:2px; text-decoration:none; color:var(--muted); font-size:10px; font-weight:500; padding:4px 12px; cursor:pointer; transition:color 0.15s; }
+    .tab-item .tab-icon { font-size:20px; line-height:1; }
+    .tab-item.active { color:var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="status-bar"><span>9:41</span><span>&#9679;&#9679;&#9679;</span></div>
+    <div class="nav-bar">
+      <a class="back-btn" href="recipes.html">&#8592;</a>
+      <span style="font-size:17px;font-weight:600">Recipe</span>
+      <button class="action">&#8942;</button>
+    </div>
+    <div class="hero">
+      &#127837;
+      <div class="hero-badge"><span>&#9200; 25 min</span><span>&#128100; 2 portions</span></div>
+    </div>
+    <div class="detail">
+      <h1>Pasta Carbonara</h1>
+      <div class="d-meta">
+        <span>&#9733; 4.8 (24 reviews)</span>
+        <span>&#9889; 420 cal per serving</span>
+        <span>&#127860; Italian</span>
+      </div>
+
+      <div class="buy-banner">
+        <span class="b-icon">&#128722;</span>
+        <span class="b-text"><strong>2 ingredients</strong> needed to buy</span>
+        <button class="b-btn">Add to list</button>
+      </div>
+
+      <div class="d-section">
+        <h2>Ingredients <span class="count">(8 items)</span></h2>
+        <div class="ingredient-list">
+          <div class="ing-row avail">
+            <span class="ing-status">&#10003;</span>
+            <span class="ing-name">Spaghetti</span>
+            <span class="ing-amount">200g</span>
+            <span class="ing-tag">Have</span>
+          </div>
+          <div class="ing-row avail">
+            <span class="ing-status">&#10003;</span>
+            <span class="ing-name">Eggs</span>
+            <span class="ing-amount">3</span>
+            <span class="ing-tag">Have</span>
+          </div>
+          <div class="ing-row avail">
+            <span class="ing-status">&#10003;</span>
+            <span class="ing-name">Parmesan</span>
+            <span class="ing-amount">50g</span>
+            <span class="ing-tag">Have</span>
+          </div>
+          <div class="ing-row avail">
+            <span class="ing-status">&#10003;</span>
+            <span class="ing-name">Black Pepper</span>
+            <span class="ing-amount">1 tsp</span>
+            <span class="ing-tag">Have</span>
+          </div>
+          <div class="ing-row avail">
+            <span class="ing-status">&#10003;</span>
+            <span class="ing-name">Salt</span>
+            <span class="ing-amount">to taste</span>
+            <span class="ing-tag">Have</span>
+          </div>
+          <div class="ing-row missing">
+            <span class="ing-status">+</span>
+            <span class="ing-name">Pancetta</span>
+            <span class="ing-amount">150g</span>
+            <span class="ing-tag">Buy</span>
+          </div>
+          <div class="ing-row missing">
+            <span class="ing-status">+</span>
+            <span class="ing-name">Pecorino Romano</span>
+            <span class="ing-amount">50g</span>
+            <span class="ing-tag">Buy</span>
+          </div>
+          <div class="ing-row avail">
+            <span class="ing-status">&#10003;</span>
+            <span class="ing-name">Garlic</span>
+            <span class="ing-amount">2 cloves</span>
+            <span class="ing-tag">Have</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-section">
+        <h2>Instructions</h2>
+        <div class="instruction-list">
+          <div class="instruction-step">
+            <span class="step-num">1</span>
+            <span class="step-text">Bring a large pot of salted water to boil. Cook spaghetti according to package directions until al dente. Reserve 1 cup pasta water before draining.</span>
+          </div>
+          <div class="instruction-step">
+            <span class="step-num">2</span>
+            <span class="step-text">While pasta cooks, cut pancetta into small strips. Cook in a cold skillet over medium heat until crispy and fat renders, about 6-8 minutes.</span>
+          </div>
+          <div class="instruction-step">
+            <span class="step-num">3</span>
+            <span class="step-text">In a bowl, whisk eggs with finely grated Pecorino Romano and Parmesan until smooth. Season generously with black pepper.</span>
+          </div>
+          <div class="instruction-step">
+            <span class="step-num">4</span>
+            <span class="step-text">Remove skillet from heat. Add drained pasta to the pancetta and toss. Let cool for 1 minute, then pour egg mixture over pasta while tossing vigorously.</span>
+          </div>
+          <div class="instruction-step">
+            <span class="step-num">5</span>
+            <span class="step-text">Add reserved pasta water a little at a time until sauce is creamy and coats each strand. Serve immediately with extra Pecorino and pepper.</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="start-btn">&#9654; Start cooking</button>
+    </div>
+    <nav class="tab-bar">
+      <a class="tab-item" href="home.html"><span class="tab-icon">&#9650;</span>Home</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#9733;</span>Fridge</a>
+      <a class="tab-item active" href="#"><span class="tab-icon">&#127858;</span>Recipes</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#8981;</span>Search</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#9881;</span>Settings</a>
+    </nav>
+  </div>
+</body>
+</html>

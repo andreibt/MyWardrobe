@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/light/cocktails.html",
+  "entry": "screens/light/cocktails.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-03T21:59:21.994Z",
+  "updatedAt": "2026-07-03T21:59:21.994Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

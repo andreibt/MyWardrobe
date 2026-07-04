@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Wardrobe — PolarNest Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --fg: #0d1117;
+      --accent: #161b22;
+      --surface: #eceef1;
+      --muted: #8d9094;
+      --border: #d5d7da;
+      --radius: 8px;
+      --radius-lg: 14px;
+      --font: 'Inter', system-ui, -apple-system, Segoe UI, Helvetica Neue, Arial, sans-serif;
+      --tab-bar: rgba(245,247,250,0.96);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background: var(--bg);
+      font: 400 15px/1.5 var(--font);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    .phone {
+      max-width: 390px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      position: relative;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg);
+      flex-shrink: 0;
+    }
+    .status-bar .time { font-weight: 700; }
+    .status-icons { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 20px 12px;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .header .count-badge {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px 100px;
+    }
+
+    /* ---- search bar ---- */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+    }
+    .search-bar .search-icon { font-size: 16px; color: var(--muted); flex-shrink: 0; }
+    .search-bar input {
+      flex: 1;
+      border: 0;
+      background: none;
+      font: 400 15px var(--font);
+      color: var(--fg);
+      outline: none;
+    }
+    .search-bar input::placeholder { color: var(--muted); }
+
+    /* ---- category filter chips ---- */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 16px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      flex-shrink: 0;
+      padding: 6px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font: 500 13px var(--font);
+      color: var(--fg);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .filter-chip.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+    .filter-chip:hover:not(.active) { background: var(--surface); }
+
+    /* ---- item grid ---- */
+    .item-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .item-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s;
+      cursor: pointer;
+    }
+    .item-card:active { transform: scale(0.97); }
+    .item-card .ic-img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: var(--muted);
+      position: relative;
+    }
+    .item-card .ic-img svg {
+      width: 40px; height: 40px;
+      opacity: 0.4;
+    }
+    .item-card .ic-body {
+      padding: 10px 12px 12px;
+    }
+    .item-card .ic-name {
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    .item-card .ic-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .item-card .ic-tag-row {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .item-card .ic-tag {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(22,27,34,0.06);
+      color: var(--accent);
+    }
+
+    /* ---- empty state ---- */
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+    }
+    .empty-state .empty-icon {
+      font-size: 48px;
+      opacity: 0.25;
+      margin-bottom: 12px;
+    }
+    .empty-state h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .empty-state p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ---- tab bar ---- */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0 max(env(safe-area-inset-bottom, 8px), 8px);
+      background: var(--tab-bar);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      padding: 4px 12px;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: color 0.15s;
+    }
+    .tab-item .tab-icon { font-size: 20px; line-height: 1; }
+    .tab-item.active { color: var(--accent); }
+
+    .fab {
+      position: fixed;
+      bottom: 76px;
+      right: calc(50% - 175px);
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--bg);
+      border: 0;
+      font-size: 26px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(22,27,34,0.20);
+      display: grid;
+      place-items: center;
+      z-index: 10;
+      text-decoration: none;
+      transition: transform 0.15s;
+    }
+    .fab:active { transform: scale(0.92); }
+    @media (min-width: 430px) { .fab { right: calc(50% - 187px); } }
+  </style>
+</head>
+<body>
+  <div class="phone">
+
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="status-icons">&#9679;&#9679;&#9679;</span>
+    </div>
+
+    <div class="header">
+      <h1>Wardrobe</h1>
+      <span class="count-badge">28 items</span>
+    </div>
+
+    <div class="content">
+      <!-- search -->
+      <div class="search-bar">
+        <span class="search-icon">&#8981;</span>
+        <input type="search" placeholder="Search wardrobe..." aria-label="Search wardrobe" />
+      </div>
+
+      <!-- category filters -->
+      <div class="filter-row">
+        <button class="filter-chip active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="tops">Tops</button>
+        <button class="filter-chip" data-filter="bottoms">Bottoms</button>
+        <button class="filter-chip" data-filter="outerwear">Outerwear</button>
+        <button class="filter-chip" data-filter="footwear">Footwear</button>
+        <button class="filter-chip" data-filter="accessories">Accessories</button>
+      </div>
+
+      <!-- item grid -->
+      <div class="item-grid">
+
+        <div class="item-card" onclick="location.href='item-detail.html'">
+          <div class="ic-img">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-4a4 4 0 0 1-4-4V1"/><path d="M4 7h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/></svg>
+          </div>
+          <div class="ic-body">
+            <div class="ic-name">Cashmere Sweater</div>
+            <div class="ic-meta">Nordstrom &middot; Navy</div>
+            <div class="ic-tag-row">
+              <span class="ic-tag">Tops</span>
+              <span class="ic-tag">Winter</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item-card" onclick="location.href='item-detail.html'">
+          <div class="ic-img">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          </div>
+          <div class="ic-body">
+            <div class="ic-name">Leather Tote Bag</div>
+            <div class="ic-meta">Coach &middot; Black</div>
+            <div class="ic-tag-row">
+              <span class="ic-tag">Accessories</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item-card" onclick="location.href='item-detail.html'">
+          <div class="ic-img">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="ic-body">
+            <div class="ic-name">White Linen Shirt</div>
+            <div class="ic-meta">Uniqlo &middot; White</div>
+            <div class="ic-tag-row">
+              <span class="ic-tag">Tops</span>
+              <span class="ic-tag">Summer</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item-card" onclick="location.href='item-detail.html'">
+          <div class="ic-img">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="ic-body">
+            <div class="ic-name">Slim Fit Jeans</div>
+            <div class="ic-meta">Levi's &middot; Dark Wash</div>
+            <div class="ic-tag-row">
+              <span class="ic-tag">Bottoms</span>
+              <span class="ic-tag">Casual</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item-card" onclick="location.href='item-detail.html'">
+          <div class="ic-img">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="ic-body">
+            <div class="ic-name">Wool Blazer</div>
+            <div class="ic-meta">Theory &middot; Charcoal</div>
+            <div class="ic-tag-row">
+              <span class="ic-tag">Outerwear</span>
+              <span class="ic-tag">Formal</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="item-card" onclick="location.href='item-detail.html'">
+          <div class="ic-img">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M2 12a10 10 0 0 1 20 0"/><path d="M2 12a10 10 0 0 0 20 0"/><path d="M12 2v20"/></svg>
+          </div>
+          <div class="ic-body">
+            <div class="ic-name">Canvas Sneakers</div>
+            <div class="ic-meta">Veja &middot; White</div>
+            <div class="ic-tag-row">
+              <span class="ic-tag">Footwear</span>
+              <span class="ic-tag">Casual</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="empty-state">
+        <div class="empty-icon">&#9744;</div>
+        <h3>No items match this filter</h3>
+        <p>Try a different category or add new items.</p>
+      </div>
+
+    </div>
+
+    <nav class="tab-bar">
+      <a class="tab-item" href="home.html">
+        <span class="tab-icon">&#9650;</span>
+        <span>Home</span>
+      </a>
+      <a class="tab-item active" href="wardrobe.html">
+        <span class="tab-icon">&#9825;</span>
+        <span>Wardrobe</span>
+      </a>
+      <a class="tab-item" href="../../fridge.html">
+        <span class="tab-icon">&#9733;</span>
+        <span>Fridge</span>
+      </a>
+      <a class="tab-item" href="#">
+        <span class="tab-icon">&#8981;</span>
+        <span>Search</span>
+      </a>
+      <a class="tab-item" href="#">
+        <span class="tab-icon">&#9881;</span>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <a class="fab" href="../../add-item.html" aria-label="Add item">+</a>
+
+  </div>
+  <script>
+    document.querySelectorAll('.filter-chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        document.querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

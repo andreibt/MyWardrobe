@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -16,6 +17,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
 
 import { FridgeTagSelector } from "../../src/components/FridgeTagSelector";
@@ -26,7 +28,8 @@ import {
   type QuantityType,
 } from "../../src/lib/firestore/fridgeItems";
 import { useAuth } from "../../src/providers/AuthProvider";
-import { colors, radius, spacing, typography } from "../../src/theme/tokens";
+import { useTheme, type AppTheme } from "../../src/providers/ThemeProvider";
+import { spacing, typography } from "../../src/theme/tokens";
 
 const itemSchema = z.object({
   name: z.string().min(2, "fridge_add.validation.name"),
@@ -80,7 +83,11 @@ const compressImageToDataUrl = async (uri: string) => {
 export default function EditFridgeItemScreen() {
   const { t } = useI18n();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const colors = theme.colors;
   const params = useLocalSearchParams<Record<string, string | string[]>>();
   const itemId = getParam(params.id);
   const initialImageSerialized = getParam(params.imageSerialized);
@@ -97,6 +104,7 @@ export default function EditFridgeItemScreen() {
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ItemForm>({
     resolver: zodResolver(itemSchema),
@@ -110,6 +118,7 @@ export default function EditFridgeItemScreen() {
     },
   });
   const isBusy = isSubmitting || isImageProcessing;
+  const imagePreviewUri = imageSerialized || watch("imageUrl");
 
   const onSubmit = async (data: ItemForm) => {
     if (!itemId || (!data.imageUrl && !imageSerialized)) {
@@ -152,18 +161,80 @@ export default function EditFridgeItemScreen() {
     }
   };
 
-  const fields: Array<{ name: keyof ItemForm; label: string; keyboardType?: "numeric" }> = [
-    { name: "name", label: "fridge_add.label.name" },
-    { name: "description", label: "fridge_add.label.description" },
-    { name: "quantity", label: "fridge_add.label.quantity", keyboardType: "numeric" },
-    { name: "calories", label: "fridge_add.label.calories", keyboardType: "numeric" },
+  const fields: Array<{
+    name: keyof ItemForm;
+    label: string;
+    placeholder: string;
+    keyboardType?: "default" | "numeric";
+    multiline?: boolean;
+  }> = [
+    { name: "name", label: "fridge_add.label.name", placeholder: "fridge_add.placeholder.name" },
+    {
+      name: "description",
+      label: "fridge_add.label.description",
+      placeholder: "fridge_add.placeholder.description",
+      multiline: true,
+    },
+    {
+      name: "quantity",
+      label: "fridge_add.label.quantity",
+      placeholder: "fridge_add.placeholder.quantity",
+      keyboardType: "numeric",
+    },
+    {
+      name: "calories",
+      label: "fridge_add.label.calories",
+      placeholder: "fridge_add.placeholder.calories",
+      keyboardType: "numeric",
+    },
   ];
 
   return (
-    <KeyboardAvoidingView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{t("fridge_edit.title")}</Text>
-        <View style={styles.card}>
+    <KeyboardAvoidingView
+      behavior={Platform.select({ ios: "padding", android: undefined })}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: Math.max(insets.top + spacing.sm, spacing.lg),
+            paddingBottom: Math.max(insets.bottom + spacing.lg, spacing.xl),
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.navBar}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t("edit.cancel")}
+          >
+            <MaterialCommunityIcons name="arrow-left" color={colors.text} size={20} />
+          </Pressable>
+          <Text style={styles.navTitle}>{t("fridge_edit.title")}</Text>
+        </View>
+
+        <Pressable
+          onPress={handleUploadImage}
+          disabled={isImageProcessing}
+          style={({ pressed }) => [styles.photoUpload, pressed && styles.buttonPressed]}
+        >
+          {isImageProcessing ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : imagePreviewUri ? (
+            <Image source={{ uri: imagePreviewUri }} style={styles.photoPreview} />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="food-apple-outline" color={colors.muted} size={34} />
+              <Text style={styles.uploadLabel}>{t("add.upload.button")}</Text>
+              <Text style={styles.uploadHint}>{t("fridge_add.validation.image")}</Text>
+            </>
+          )}
+        </Pressable>
+
+        <View style={styles.form}>
           {fields.map((field) => (
             <View key={field.name} style={styles.field}>
               <Text style={styles.label}>{t(field.label)}</Text>
@@ -175,8 +246,11 @@ export default function EditFridgeItemScreen() {
                     value={String(value)}
                     onBlur={onBlur}
                     onChangeText={onChange}
+                    placeholder={t(field.placeholder)}
+                    placeholderTextColor={colors.muted}
                     keyboardType={field.keyboardType}
-                    style={styles.input}
+                    multiline={field.multiline}
+                    style={[styles.input, field.multiline && styles.multilineInput]}
                   />
                 )}
               />
@@ -185,6 +259,7 @@ export default function EditFridgeItemScreen() {
               ) : null}
             </View>
           ))}
+
           <View style={styles.field}>
             <Text style={styles.label}>{t("fridge_add.label.expiration_date")}</Text>
             <Controller
@@ -197,18 +272,37 @@ export default function EditFridgeItemScreen() {
                     value={value}
                     onBlur={onBlur}
                     onChange={(event) => onChange(event.target.value)}
-                    style={styles.webDateInput}
+                    style={styles.webDateInput as unknown as CSSProperties}
                   />
                 ) : (
-                  <TextInput value={value} onBlur={onBlur} onChangeText={onChange} style={styles.input} />
+                  <TextInput
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    placeholder={t("fridge_add.placeholder.expiration_date")}
+                    placeholderTextColor={colors.muted}
+                    style={styles.input}
+                  />
                 )
               }
             />
+            {errors.expirationDate?.message ? (
+              <Text style={styles.error}>{t(String(errors.expirationDate.message))}</Text>
+            ) : null}
           </View>
+
           <View style={styles.field}>
             <Text style={styles.label}>{t("fridge_add.label.quantity_type")}</Text>
-            <Pressable onPress={() => setIsQuantityTypeOpen((value) => !value)} style={styles.input}>
-              <Text style={styles.inputText}>{quantityType}</Text>
+            <Pressable
+              onPress={() => setIsQuantityTypeOpen((value) => !value)}
+              style={({ pressed }) => [styles.dropdownButton, pressed && styles.buttonPressed]}
+            >
+              <Text style={styles.dropdownText}>{quantityType}</Text>
+              <MaterialCommunityIcons
+                name={isQuantityTypeOpen ? "chevron-up" : "chevron-down"}
+                color={colors.textMuted}
+                size={20}
+              />
             </Pressable>
             {isQuantityTypeOpen ? (
               <View style={styles.dropdownOptions}>
@@ -219,14 +313,25 @@ export default function EditFridgeItemScreen() {
                       setQuantityType(option);
                       setIsQuantityTypeOpen(false);
                     }}
-                    style={styles.dropdownOption}
+                    style={[
+                      styles.dropdownOption,
+                      option === quantityType && styles.dropdownOptionActive,
+                    ]}
                   >
-                    <Text style={styles.inputText}>{option}</Text>
+                    <Text
+                      style={[
+                        styles.dropdownOptionText,
+                        option === quantityType && styles.dropdownOptionTextActive,
+                      ]}
+                    >
+                      {option}
+                    </Text>
                   </Pressable>
                 ))}
               </View>
             ) : null}
           </View>
+
           <View style={styles.field}>
             <Text style={styles.label}>{t("fridge_add.label.image")}</Text>
             <Controller
@@ -239,22 +344,58 @@ export default function EditFridgeItemScreen() {
                   onChangeText={(nextValue) => {
                     onChange(nextValue);
                     setImageSerialized("");
+                    setImageError(null);
                   }}
+                  placeholder={t("fridge_add.placeholder.image")}
+                  placeholderTextColor={colors.muted}
+                  autoCapitalize="none"
                   style={styles.input}
                 />
               )}
             />
-            {imageSerialized ? <Image source={{ uri: imageSerialized }} style={styles.previewImage} /> : null}
-            <Pressable onPress={handleUploadImage} style={styles.uploadButton}>
-              <Text style={styles.uploadText}>{t("add.upload.button")}</Text>
+            {errors.imageUrl?.message ? (
+              <Text style={styles.error}>{t(String(errors.imageUrl.message))}</Text>
+            ) : null}
+            <Pressable
+              onPress={handleUploadImage}
+              disabled={isImageProcessing}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed && styles.buttonPressed,
+                isImageProcessing && styles.buttonDisabled,
+              ]}
+            >
+              {isImageProcessing ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="image-plus" color={colors.primary} size={18} />
+                  <Text style={styles.secondaryButtonText}>{t("add.upload.button")}</Text>
+                </>
+              )}
             </Pressable>
             {imageError ? <Text style={styles.error}>{t(imageError)}</Text> : null}
           </View>
+
           <FridgeTagSelector ownerId={user?.id ?? null} selectedTags={tags} onChange={setTags} />
-          <Pressable onPress={handleSubmit(onSubmit)} disabled={isBusy} style={styles.saveButton}>
-            {isBusy ? <ActivityIndicator color={colors.background} /> : <Text style={styles.saveText}>{t("fridge_edit.save")}</Text>}
+
+          <Pressable
+            onPress={handleSubmit(onSubmit)}
+            disabled={isBusy}
+            style={({ pressed }) => [
+              styles.saveButton,
+              pressed && styles.buttonPressed,
+              isBusy && styles.buttonDisabled,
+            ]}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color={colors.logoTint} />
+            ) : (
+              <Text style={styles.saveText}>{t("fridge_edit.save")}</Text>
+            )}
           </Pressable>
         </View>
+
         <Pressable onPress={() => router.back()}>
           <Text style={styles.cancelText}>{t("edit.cancel")}</Text>
         </Pressable>
@@ -263,23 +404,188 @@ export default function EditFridgeItemScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, gap: spacing.lg },
-  title: { color: colors.text, ...typography.h1 },
-  card: { padding: spacing.lg, gap: spacing.sm, borderRadius: radius.lg, backgroundColor: colors.surface },
-  field: { gap: spacing.xs },
-  label: { color: colors.text, ...typography.caption, textTransform: "uppercase" },
-  input: { padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, color: colors.text, backgroundColor: colors.card },
-  inputText: { color: colors.text, ...typography.body },
-  webDateInput: { padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, color: colors.text, backgroundColor: colors.card },
-  dropdownOptions: { borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
-  dropdownOption: { padding: spacing.sm, backgroundColor: colors.card },
-  previewImage: { width: "100%", height: 180, borderRadius: radius.sm },
-  uploadButton: { alignItems: "center", padding: spacing.sm, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border },
-  uploadText: { color: colors.primary, ...typography.body },
-  error: { color: colors.danger, ...typography.caption },
-  saveButton: { alignItems: "center", padding: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.accent },
-  saveText: { color: colors.background, ...typography.h2 },
-  cancelText: { color: colors.primary, textAlign: "center", ...typography.body },
-});
+const createStyles = (theme: AppTheme) => {
+  const colors = theme.colors;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      flexGrow: 1,
+      paddingHorizontal: 20,
+      gap: spacing.lg,
+    },
+    navBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    backButton: {
+      width: 38,
+      height: 38,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 19,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    navTitle: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 18,
+      lineHeight: 24,
+      fontWeight: "600",
+    },
+    photoUpload: {
+      width: "100%",
+      aspectRatio: 4 / 3,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      overflow: "hidden",
+      borderRadius: 16,
+      borderWidth: 2,
+      borderStyle: "dashed",
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    photoPreview: {
+      width: "100%",
+      height: "100%",
+    },
+    uploadLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "600",
+    },
+    uploadHint: {
+      color: colors.muted,
+      fontSize: 11,
+      lineHeight: 15,
+      textAlign: "center",
+      paddingHorizontal: spacing.lg,
+    },
+    form: {
+      gap: spacing.md,
+    },
+    field: {
+      gap: spacing.xs,
+    },
+    label: {
+      color: colors.textMuted,
+      ...typography.caption,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      fontWeight: "600",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      color: colors.text,
+      backgroundColor: colors.surface,
+      fontSize: 15,
+      lineHeight: 20,
+    },
+    multilineInput: {
+      minHeight: 96,
+      textAlignVertical: "top",
+    },
+    webDateInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      color: colors.text,
+      backgroundColor: colors.surface,
+      fontSize: 15,
+      lineHeight: 20,
+    },
+    dropdownButton: {
+      minHeight: 46,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      backgroundColor: colors.surface,
+    },
+    dropdownText: {
+      color: colors.text,
+      ...typography.body,
+    },
+    dropdownOptions: {
+      overflow: "hidden",
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    dropdownOption: {
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+    },
+    dropdownOptionActive: {
+      backgroundColor: colors.primary,
+    },
+    dropdownOptionText: {
+      color: colors.text,
+      ...typography.body,
+    },
+    dropdownOptionTextActive: {
+      color: colors.logoTint,
+      fontWeight: "700",
+    },
+    secondaryButton: {
+      minHeight: 44,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    secondaryButtonText: {
+      color: colors.primary,
+      ...typography.body,
+      fontWeight: "600",
+    },
+    error: {
+      color: colors.danger,
+      ...typography.caption,
+    },
+    saveButton: {
+      marginTop: spacing.sm,
+      alignItems: "center",
+      paddingVertical: 15,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+    },
+    saveText: {
+      color: colors.logoTint,
+      ...typography.h2,
+    },
+    cancelText: {
+      color: colors.primary,
+      textAlign: "center",
+      ...typography.body,
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+  });
+};

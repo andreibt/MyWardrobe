@@ -1,7 +1,17 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FridgeCard } from "../../../src/components/FridgeCard";
 import { useI18n } from "../../../src/i18n/I18nProvider";
@@ -15,20 +25,26 @@ import {
   type FridgeTag,
 } from "../../../src/lib/firestore/fridgeTags";
 import { useAuth } from "../../../src/providers/AuthProvider";
-import { colors, radius, spacing, typography } from "../../../src/theme/tokens";
+import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
+import { spacing, typography } from "../../../src/theme/tokens";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
 type ViewMode = "list" | "grid";
 type InventoryMode = "active" | "history";
+type FilterChip = { id: string; name: string; isAll?: boolean };
 
 export default function FridgeListScreen() {
   const { t } = useI18n();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const colors = theme.colors;
   const [items, setItems] = useState<FridgeItem[]>([]);
   const [tags, setTags] = useState<FridgeTag[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -58,12 +74,40 @@ export default function FridgeListScreen() {
   }, [user]);
 
   const filteredItems = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
     const inventoryItems = items.filter((item) => item.isHistory === isHistoryView);
-    if (tagFilters.length === 0) {
-      return inventoryItems;
-    }
-    return inventoryItems.filter((item) => item.tags.some((tag) => tagFilters.includes(tag)));
-  }, [isHistoryView, items, tagFilters]);
+    return inventoryItems.filter((item) => {
+      const matchesTags =
+        tagFilters.length === 0 || item.tags.some((tag) => tagFilters.includes(tag));
+      const matchesSearch =
+        !normalizedQuery ||
+        item.name.toLowerCase().includes(normalizedQuery) ||
+        item.description.toLowerCase().includes(normalizedQuery) ||
+        item.quantityType.toLowerCase().includes(normalizedQuery) ||
+        item.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
+      return matchesTags && matchesSearch;
+    });
+  }, [isHistoryView, items, searchQuery, tagFilters]);
+
+  const activeCount = useMemo(() => items.filter((item) => !item.isHistory).length, [items]);
+  const expiringCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const soon = new Date(today);
+    soon.setDate(soon.getDate() + 3);
+    return items.filter((item) => {
+      if (item.isHistory) {
+        return false;
+      }
+      const expiration = new Date(`${item.expirationDate}T00:00:00`);
+      return !Number.isNaN(expiration.getTime()) && expiration >= today && expiration <= soon;
+    }).length;
+  }, [items]);
+
+  const filterChips = useMemo<FilterChip[]>(
+    () => [{ id: "all", name: t("fridge_list.filter_hint"), isAll: true }, ...tags],
+    [t, tags]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const paginatedItems = useMemo(() => {
@@ -73,7 +117,7 @@ export default function FridgeListScreen() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [inventoryMode, pageSize, tagFilters]);
+  }, [inventoryMode, pageSize, searchQuery, tagFilters]);
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -106,107 +150,146 @@ export default function FridgeListScreen() {
         data={paginatedItems}
         numColumns={isGridView ? 2 : 1}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          {
+            paddingTop: Math.max(insets.top + spacing.sm, spacing.lg),
+            paddingBottom: Math.max(insets.bottom + 96, 120),
+          },
+        ]}
         columnWrapperStyle={isGridView ? styles.gridRow : undefined}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>{t("fridge_list.title")}</Text>
-            <Text style={styles.subtitle}>{t("fridge_list.subtitle")}</Text>
-            <View style={styles.inventoryToggle}>
+            <View style={styles.titleRow}>
+              <View style={styles.titleBlock}>
+                <Text style={styles.title}>{t("fridge_list.title")}</Text>
+                <Text style={styles.count}>{t("home.dashboard.active_items", { count: activeCount })}</Text>
+              </View>
+              <Pressable
+                onPress={() => router.push("/(app)/add-receipt")}
+                style={({ pressed }) => [styles.receiptButton, pressed && styles.buttonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t("fridge_list.add_receipt")}
+              >
+                <MaterialCommunityIcons name="receipt-text-outline" color={colors.primary} size={20} />
+              </Pressable>
+            </View>
+
+            {expiringCount > 0 && !isHistoryView ? (
+              <View style={styles.alertBanner}>
+                <MaterialCommunityIcons name="timer-sand" color={colors.accent} size={18} />
+                <Text style={styles.alertText}>
+                  {t("fridge_list.expiring_alert", { count: expiringCount })}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.searchBar}>
+              <MaterialCommunityIcons name="magnify" color={colors.muted} size={18} />
+              <TextInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder={t("fridge_list.search_placeholder")}
+                placeholderTextColor={colors.muted}
+                style={styles.searchInput}
+                autoCapitalize="none"
+              />
+              {searchQuery ? (
+                <Pressable
+                  onPress={() => setSearchQuery("")}
+                  style={styles.clearSearchButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("fridge_list.filter_clear")}
+                >
+                  <MaterialCommunityIcons name="close" color={colors.textMuted} size={16} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            <View style={styles.segmentedControl}>
               <Pressable
                 onPress={() => setInventoryMode("active")}
-                style={[styles.inventoryButton, !isHistoryView && styles.inventoryButtonActive]}
+                style={[styles.segmentButton, !isHistoryView && styles.segmentButtonActive]}
               >
-                <Text style={styles.inventoryButtonText}>{t("fridge_list.active")}</Text>
+                <Text style={[styles.segmentText, !isHistoryView && styles.segmentTextActive]}>
+                  {t("fridge_list.active")}
+                </Text>
               </Pressable>
               <Pressable
                 onPress={() => setInventoryMode("history")}
-                style={[styles.inventoryButton, isHistoryView && styles.inventoryButtonActive]}
+                style={[styles.segmentButton, isHistoryView && styles.segmentButtonActive]}
               >
-                <Text style={styles.inventoryButtonText}>{t("fridge_list.history")}</Text>
+                <Text style={[styles.segmentText, isHistoryView && styles.segmentTextActive]}>
+                  {t("fridge_list.history")}
+                </Text>
               </Pressable>
             </View>
-            <Pressable
-              onPress={() => setIsFilterOpen((value) => !value)}
-              style={styles.filterToggle}
-            >
-              <Text style={styles.filterToggleText}>{t("fridge_list.filter_title")}</Text>
-              <Text style={styles.filterHint}>
-                {tagFilters.length > 0
-                  ? t("fridge_list.filter_count", { count: tagFilters.length })
-                  : t("fridge_list.filter_hint")}
-              </Text>
-            </Pressable>
-            {isFilterOpen ? (
-              <View style={styles.filterPanel}>
-                {tags.length === 0 ? (
-                  <Text style={styles.filterHint}>{t("fridge_list.filter_empty")}</Text>
-                ) : (
-                  <View style={styles.filterTagList}>
-                    {tags.map((tag) => {
-                      const selected = tagFilters.includes(tag.name);
-                      return (
-                        <Pressable
-                          key={tag.id}
-                          onPress={() => toggleFilter(tag.name)}
-                          style={[styles.filterChip, selected && styles.filterChipActive]}
-                        >
-                          <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>
-                            {tag.name}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                )}
-                {tagFilters.length > 0 ? (
-                  <Pressable onPress={() => setTagFilters([])} style={styles.clearButton}>
-                    <Text style={styles.clearButtonText}>{t("fridge_list.filter_clear")}</Text>
+
+            <FlatList
+              horizontal
+              data={filterChips}
+              keyExtractor={(tag) => tag.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+              renderItem={({ item }) => {
+                const selected = item.isAll ? tagFilters.length === 0 : tagFilters.includes(item.name);
+                return (
+                  <Pressable
+                    onPress={() => (item.isAll ? setTagFilters([]) : toggleFilter(item.name))}
+                    style={({ pressed }) => [
+                      styles.filterChip,
+                      selected && styles.filterChipActive,
+                      pressed && styles.buttonPressed,
+                    ]}
+                  >
+                    <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>
+                      {item.name}
+                    </Text>
                   </Pressable>
-                ) : null}
+                );
+              }}
+              ListEmptyComponent={<Text style={styles.filterHint}>{t("fridge_list.filter_empty")}</Text>}
+            />
+
+            <View style={styles.toolbar}>
+              <View style={styles.viewToggle}>
+                <Pressable
+                  onPress={() => setViewMode("list")}
+                  style={[styles.viewButton, !isGridView && styles.viewButtonActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("fridge_list.view_list")}
+                >
+                  <MaterialCommunityIcons
+                    name="view-list-outline"
+                    color={!isGridView ? colors.logoTint : colors.textMuted}
+                    size={20}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={() => setViewMode("grid")}
+                  style={[styles.viewButton, isGridView && styles.viewButtonActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("fridge_list.view_grid")}
+                >
+                  <MaterialCommunityIcons
+                    name="view-grid-outline"
+                    color={isGridView ? colors.logoTint : colors.textMuted}
+                    size={20}
+                  />
+                </Pressable>
               </View>
-            ) : null}
-            <View style={styles.viewToggle}>
-              <Pressable
-                onPress={() => setViewMode("grid")}
-                style={[styles.viewButton, isGridView && styles.viewButtonActive]}
-                accessibilityLabel={t("fridge_list.view_grid")}
-              >
-                <MaterialCommunityIcons
-                  name="view-grid-outline"
-                  color={isGridView ? colors.background : colors.muted}
-                  size={22}
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => setViewMode("list")}
-                style={[styles.viewButton, !isGridView && styles.viewButtonActive]}
-                accessibilityLabel={t("fridge_list.view_list")}
-              >
-                <MaterialCommunityIcons
-                  name="view-list-outline"
-                  color={!isGridView ? colors.background : colors.muted}
-                  size={22}
-                />
-              </Pressable>
+
+              {tagFilters.length > 0 ? (
+                <Pressable
+                  onPress={() => setTagFilters([])}
+                  style={({ pressed }) => [styles.clearButton, pressed && styles.buttonPressed]}
+                >
+                  <Text style={styles.clearButtonText}>{t("fridge_list.filter_clear")}</Text>
+                </Pressable>
+              ) : null}
             </View>
-            {!isHistoryView ? (
-              <View style={styles.addActions}>
-                <Pressable
-                  onPress={() => router.push("/(app)/add-fridge-item")}
-                  style={styles.addButton}
-                >
-                  <Text style={styles.addButtonText}>{t("fridge_list.add_button")}</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => router.push("/(app)/add-receipt")}
-                  style={styles.receiptButton}
-                >
-                  <Text style={styles.addButtonText}>{t("fridge_list.add_receipt")}</Text>
-                </Pressable>
-              </View>
-            ) : null}
           </View>
         }
         renderItem={({ item }) => (
@@ -215,43 +298,55 @@ export default function FridgeListScreen() {
               item={item}
               compact={isGridView}
               isHistory={isHistoryView}
-              onEdit={!isHistoryView ? () =>
-                router.push({
-                  pathname: "/(app)/edit-fridge-item",
-                  params: {
-                    id: item.id,
-                    name: item.name,
-                    description: item.description,
-                    quantity: String(item.quantity),
-                    quantityType: item.quantityType,
-                    expirationDate: item.expirationDate,
-                    calories: String(item.calories),
-                    imageUrl: item.imageUrl,
-                    imageSerialized: item.imageSerialized ?? "",
-                    tags: JSON.stringify(item.tags),
-                  },
-                })
-              : undefined}
+              onEdit={
+                !isHistoryView
+                  ? () =>
+                      router.push({
+                        pathname: "/(app)/edit-fridge-item",
+                        params: {
+                          id: item.id,
+                          name: item.name,
+                          description: item.description,
+                          quantity: String(item.quantity),
+                          quantityType: item.quantityType,
+                          expirationDate: item.expirationDate,
+                          calories: String(item.calories),
+                          imageUrl: item.imageUrl,
+                          imageSerialized: item.imageSerialized ?? "",
+                          tags: JSON.stringify(item.tags),
+                        },
+                      })
+                  : undefined
+              }
               onArchive={!isHistoryView ? () => confirmArchive(item.id) : undefined}
-              onRestore={isHistoryView ? () =>
-                router.push({
-                  pathname: "/(app)/restore-fridge-item",
-                  params: { id: item.id, name: item.name },
-                })
-              : undefined}
+              onRestore={
+                isHistoryView
+                  ? () =>
+                      router.push({
+                        pathname: "/(app)/restore-fridge-item",
+                        params: { id: item.id, name: item.name },
+                      })
+                  : undefined
+              }
             />
           </View>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
+            <MaterialCommunityIcons name="fridge-outline" color={colors.muted} size={46} />
             <Text style={styles.emptyTitle}>
               {isLoading
                 ? t("fridge_list.empty_loading")
-                : tagFilters.length > 0
-                ? t("fridge_list.empty_filtered")
-                : isHistoryView
-                ? t("fridge_list.empty_history")
-                : t("fridge_list.empty")}
+                : tagFilters.length > 0 || searchQuery
+                  ? t("fridge_list.empty_filtered")
+                  : isHistoryView
+                    ? t("fridge_list.empty_history")
+                    : t("fridge_list.empty")}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              {tagFilters.length > 0 || searchQuery
+                ? t("wardrobe_list.empty_filtered_subtitle")
+                : t("home.dashboard.organized_body")}
             </Text>
           </View>
         }
@@ -260,22 +355,32 @@ export default function FridgeListScreen() {
             <View style={styles.pagination}>
               <Text style={styles.paginationLabel}>{t("fridge_list.page_size")}</Text>
               <View style={styles.pageSizeOptions}>
-                {PAGE_SIZE_OPTIONS.map((option) => (
-                  <Pressable
-                    key={option}
-                    onPress={() => setPageSize(option)}
-                    style={[styles.pageSizeButton, pageSize === option && styles.viewButtonActive]}
-                  >
-                    <Text style={styles.pageSizeText}>{option}</Text>
-                  </Pressable>
-                ))}
+                {PAGE_SIZE_OPTIONS.map((option) => {
+                  const selected = pageSize === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setPageSize(option)}
+                      style={[styles.pageSizeButton, selected && styles.pageSizeButtonActive]}
+                    >
+                      <Text style={[styles.pageSizeText, selected && styles.pageSizeTextActive]}>
+                        {option}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
               <View style={styles.pageControls}>
                 <Pressable
                   disabled={currentPage === 1}
                   onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                  style={[styles.pageButton, currentPage === 1 && styles.disabled]}
+                  style={({ pressed }) => [
+                    styles.pageButton,
+                    (currentPage === 1 || pressed) && styles.buttonPressed,
+                    currentPage === 1 && styles.disabled,
+                  ]}
                 >
+                  <MaterialCommunityIcons name="chevron-left" color={colors.primary} size={18} />
                   <Text style={styles.pageButtonText}>{t("fridge_list.page_previous")}</Text>
                 </Pressable>
                 <Text style={styles.pageStatus}>
@@ -284,126 +389,343 @@ export default function FridgeListScreen() {
                 <Pressable
                   disabled={currentPage === totalPages}
                   onPress={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                  style={[styles.pageButton, currentPage === totalPages && styles.disabled]}
+                  style={({ pressed }) => [
+                    styles.pageButton,
+                    (currentPage === totalPages || pressed) && styles.buttonPressed,
+                    currentPage === totalPages && styles.disabled,
+                  ]}
                 >
                   <Text style={styles.pageButtonText}>{t("fridge_list.page_next")}</Text>
+                  <MaterialCommunityIcons name="chevron-right" color={colors.primary} size={18} />
                 </Pressable>
               </View>
             </View>
           ) : null
         }
       />
+
+      {!isHistoryView ? (
+        <Pressable
+          onPress={() => router.push("/(app)/add-fridge-item")}
+          style={({ pressed }) => [
+            styles.fab,
+            { bottom: Math.max(insets.bottom + spacing.lg, 76) },
+            pressed && styles.fabPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={t("fridge_list.add_button")}
+        >
+          <MaterialCommunityIcons name="plus" color={colors.logoTint} size={28} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  listContent: { padding: spacing.lg },
-  header: { gap: spacing.sm, marginBottom: spacing.lg },
-  title: { color: colors.text, ...typography.h1 },
-  subtitle: { color: colors.muted, ...typography.body },
-  inventoryToggle: { flexDirection: "row", gap: spacing.xs },
-  inventoryButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  inventoryButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  inventoryButtonText: { color: colors.text, ...typography.caption },
-  gridRow: { gap: spacing.md },
-  gridItem: { flex: 1, maxWidth: "50%" },
-  separator: { height: spacing.md },
-  filterToggle: {
-    alignSelf: "flex-start",
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  filterToggleText: { color: colors.text, ...typography.caption, textTransform: "uppercase" },
-  filterHint: { color: colors.muted, ...typography.caption },
-  filterPanel: { gap: spacing.sm },
-  filterTagList: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  filterChip: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterChipText: { color: colors.text, ...typography.caption },
-  filterChipTextActive: { color: colors.background },
-  clearButton: {
-    alignSelf: "flex-start",
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
-  },
-  clearButtonText: { color: colors.background, ...typography.caption },
-  viewToggle: { flexDirection: "row", gap: spacing.xs },
-  viewButton: {
-    padding: spacing.xs,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  viewButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  addButton: {
-    alignSelf: "flex-start",
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
-  },
-  addActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  receiptButton: {
-    alignSelf: "flex-start",
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-  },
-  addButtonText: { color: colors.background, ...typography.body },
-  emptyState: { paddingVertical: spacing.xl },
-  emptyTitle: { color: colors.text, ...typography.h2 },
-  pagination: {
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  paginationLabel: { color: colors.muted, ...typography.caption, textTransform: "uppercase" },
-  pageSizeOptions: { flexDirection: "row", gap: spacing.sm },
-  pageSizeButton: {
-    minWidth: 44,
-    alignItems: "center",
-    padding: spacing.xs,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  pageSizeText: { color: colors.text, ...typography.caption },
-  pageControls: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  pageButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pageButtonText: { color: colors.primary, ...typography.caption },
-  pageStatus: { flex: 1, color: colors.muted, textAlign: "center", ...typography.caption },
-  disabled: { opacity: 0.45 },
-});
+const createStyles = (theme: AppTheme) => {
+  const colors = theme.colors;
+  const primaryDim = theme.isDark ? "rgba(0, 212, 255, 0.15)" : "rgba(22, 27, 34, 0.08)";
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      paddingHorizontal: 20,
+    },
+    header: {
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    titleBlock: {
+      flex: 1,
+    },
+    title: {
+      color: colors.text,
+      fontSize: 26,
+      lineHeight: 32,
+      fontWeight: "700",
+    },
+    count: {
+      color: colors.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: "500",
+    },
+    receiptButton: {
+      width: 42,
+      height: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 21,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    alertBanner: {
+      minHeight: 44,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.md,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.isDark ? "rgba(0, 230, 118, 0.26)" : "#B7E8C8",
+      backgroundColor: theme.isDark ? "rgba(0, 230, 118, 0.1)" : "#F6FFED",
+    },
+    alertText: {
+      flex: 1,
+      color: colors.accent,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
+    },
+    searchBar: {
+      minHeight: 44,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    searchInput: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 20,
+      paddingVertical: spacing.xs,
+    },
+    clearSearchButton: {
+      width: 28,
+      height: 28,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 14,
+      backgroundColor: colors.surface3,
+    },
+    segmentedControl: {
+      flexDirection: "row",
+      gap: 3,
+      padding: 3,
+      borderRadius: 13,
+      backgroundColor: colors.surface2,
+    },
+    segmentButton: {
+      flex: 1,
+      minHeight: 38,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 10,
+    },
+    segmentButtonActive: {
+      backgroundColor: colors.surface3,
+    },
+    segmentText: {
+      color: colors.textMuted,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
+    },
+    segmentTextActive: {
+      color: colors.primary,
+    },
+    filterRow: {
+      gap: spacing.xs,
+      paddingBottom: 4,
+    },
+    filterChip: {
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    filterChipActive: {
+      borderColor: colors.primary,
+      backgroundColor: primaryDim,
+    },
+    filterChipText: {
+      color: colors.textMuted,
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: "600",
+    },
+    filterChipTextActive: {
+      color: colors.primary,
+    },
+    filterHint: {
+      color: colors.textMuted,
+      ...typography.caption,
+    },
+    toolbar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    viewToggle: {
+      flexDirection: "row",
+      gap: spacing.xs,
+    },
+    viewButton: {
+      width: 38,
+      height: 38,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 19,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    viewButtonActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary,
+    },
+    clearButton: {
+      minHeight: 36,
+      justifyContent: "center",
+      paddingHorizontal: spacing.md,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    clearButtonText: {
+      color: colors.primary,
+      ...typography.caption,
+      fontWeight: "700",
+    },
+    gridRow: {
+      gap: spacing.sm,
+    },
+    gridItem: {
+      flex: 1,
+      maxWidth: "50%",
+      marginBottom: spacing.sm,
+    },
+    separator: {
+      height: spacing.sm,
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: 48,
+      paddingHorizontal: spacing.md,
+    },
+    emptyTitle: {
+      marginTop: spacing.sm,
+      color: colors.text,
+      ...typography.h2,
+      textAlign: "center",
+    },
+    emptySubtitle: {
+      marginTop: 4,
+      color: colors.textMuted,
+      ...typography.body,
+      textAlign: "center",
+    },
+    pagination: {
+      gap: spacing.sm,
+      marginTop: spacing.lg,
+      paddingTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    paginationLabel: {
+      color: colors.textMuted,
+      ...typography.caption,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      fontWeight: "600",
+    },
+    pageSizeOptions: {
+      flexDirection: "row",
+      gap: spacing.xs,
+    },
+    pageSizeButton: {
+      minWidth: 44,
+      minHeight: 36,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    pageSizeButtonActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary,
+    },
+    pageSizeText: {
+      color: colors.textMuted,
+      ...typography.caption,
+      fontWeight: "700",
+    },
+    pageSizeTextActive: {
+      color: colors.logoTint,
+    },
+    pageControls: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    pageButton: {
+      minHeight: 38,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 2,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 19,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    pageButtonText: {
+      color: colors.primary,
+      ...typography.caption,
+      fontWeight: "700",
+    },
+    pageStatus: {
+      flex: 1,
+      color: colors.textMuted,
+      textAlign: "center",
+      ...typography.caption,
+    },
+    fab: {
+      position: "absolute",
+      right: 20,
+      width: 52,
+      height: 52,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 26,
+      backgroundColor: colors.primary,
+      shadowColor: "#000",
+      shadowOpacity: theme.isDark ? 0.6 : 0.18,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 6,
+    },
+    fabPressed: {
+      opacity: 0.88,
+      transform: [{ scale: 0.94 }],
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    disabled: {
+      opacity: 0.45,
+    },
+  });
+};
