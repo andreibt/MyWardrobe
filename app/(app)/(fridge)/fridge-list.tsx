@@ -14,9 +14,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FridgeCard } from "../../../src/components/FridgeCard";
+import { RestoreItemModal } from "../../../src/components/RestoreItemModal";
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import {
   archiveFridgeItem,
+  restoreFridgeItem,
   subscribeToFridgeItems,
   type FridgeItem,
 } from "../../../src/lib/firestore/fridgeItems";
@@ -53,6 +55,7 @@ export default function FridgeListScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [inventoryMode, setInventoryMode] = useState<InventoryMode>("active");
   const [expirationFilter, setExpirationFilter] = useState<ExpirationFilter>("all");
+  const [restoreItem, setRestoreItem] = useState<FridgeItem | null>(null);
   const isGridView = viewMode === "grid";
   const isHistoryView = inventoryMode === "history";
 
@@ -366,11 +369,7 @@ export default function FridgeListScreen() {
               onArchive={!isHistoryView ? () => confirmArchive(item.id) : undefined}
               onRestore={
                 isHistoryView
-                  ? () =>
-                      router.push({
-                        pathname: "/(app)/restore-fridge-item",
-                        params: { id: item.id, name: item.name },
-                      })
+                  ? () => setRestoreItem(item)
                   : undefined
               }
             />
@@ -463,6 +462,20 @@ export default function FridgeListScreen() {
           <MaterialCommunityIcons name="plus" color={colors.logoTint} size={28} />
         </Pressable>
       ) : null}
+
+      <RestoreItemModal
+        visible={Boolean(restoreItem)}
+        title={t("fridge_restore.title")}
+        subtitle={t("fridge_restore.subtitle", { name: restoreItem?.name ?? "" })}
+        buttonLabel={t("fridge_restore.button")}
+        itemName={restoreItem?.name ?? ""}
+        imageUri={restoreItem?.imageSerialized || restoreItem?.imageUrl}
+        fallbackIcon="food-apple-outline"
+        onClose={() => setRestoreItem(null)}
+        onRestore={(expirationDate) =>
+          restoreItem ? restoreFridgeItem(restoreItem.id, expirationDate) : Promise.resolve()
+        }
+      />
     </View>
   );
 }

@@ -90,6 +90,7 @@
   "fridge_restore.title": "Readaugă alimentul",
   "fridge_restore.subtitle": "Alege o nouă dată de expirare pentru {{name}}.",
   "fridge_restore.button": "Adaugă înapoi în frigider",
+  "restore_modal.error": "Produsul nu a putut fi readăugat. Încearcă din nou.",
   "fridge_card.quantity": "Cantitate: {{quantity}} {{type}}",
   "fridge_card.expiration": "Expiră: {{date}}",
   "fridge_card.calories": "Calorii: {{calories}}",

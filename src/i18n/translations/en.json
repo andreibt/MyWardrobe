@@ -98,6 +98,7 @@
   "fridge_restore.title": "Restore Fridge Item",
   "fridge_restore.subtitle": "Choose a new expiration date for {{name}}.",
   "fridge_restore.button": "Add back to fridge",
+  "restore_modal.error": "The item could not be restored. Try again.",
   "fridge_card.quantity": "Quantity: {{quantity}} {{type}}",
   "fridge_card.expiration": "Expires: {{date}}",
   "fridge_card.calories": "Calories: {{calories}}",

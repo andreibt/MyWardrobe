@@ -23,7 +23,6 @@ export default function PantryScreen() {
         icon: "food-variant",
         addPath: "/(app)/add-pantry-item",
         editPath: "/(app)/edit-pantry-item",
-        restorePath: "/(app)/restore-pantry-item",
       }}
     />
   );

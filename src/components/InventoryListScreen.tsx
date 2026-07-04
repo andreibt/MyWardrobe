@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "../i18n/I18nProvider";
 import {
   archiveInventoryItem,
+  restoreInventoryItem,
   subscribeToInventoryItems,
   type InventoryItem,
   type InventoryKind,
@@ -15,6 +16,7 @@ import { useAuth } from "../providers/AuthProvider";
 import { useTheme, type AppTheme } from "../providers/ThemeProvider";
 import { spacing, typography } from "../theme/tokens";
 import { InventoryCard } from "./InventoryCard";
+import { RestoreItemModal } from "./RestoreItemModal";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
 type ViewMode = "list" | "grid";
@@ -37,7 +39,6 @@ type InventoryCopy = {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   addPath: "/(app)/add-pantry-item" | "/(app)/add-cocktail-item";
   editPath: "/(app)/edit-pantry-item" | "/(app)/edit-cocktail-item";
-  restorePath: "/(app)/restore-pantry-item" | "/(app)/restore-cocktail-item";
 };
 
 type InventoryListScreenProps = {
@@ -64,6 +65,7 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [inventoryMode, setInventoryMode] = useState<InventoryMode>("active");
   const [expirationFilter, setExpirationFilter] = useState<ExpirationFilter>("all");
+  const [restoreItem, setRestoreItem] = useState<InventoryItem | null>(null);
   const isGridView = viewMode === "grid";
   const isHistoryView = inventoryMode === "history";
   const showsExpirationAlerts = kind === "pantry";
@@ -373,11 +375,7 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
               onArchive={!isHistoryView ? () => confirmArchive(item.id) : undefined}
               onRestore={
                 isHistoryView
-                  ? () =>
-                      router.push({
-                        pathname: copy.restorePath,
-                        params: { id: item.id, name: item.name },
-                      })
+                  ? () => setRestoreItem(item)
                   : undefined
               }
             />
@@ -470,6 +468,20 @@ export function InventoryListScreen({ kind, copy }: InventoryListScreenProps) {
           <MaterialCommunityIcons name="plus" color={colors.logoTint} size={28} />
         </Pressable>
       ) : null}
+
+      <RestoreItemModal
+        visible={Boolean(restoreItem)}
+        title={kind === "pantry" ? t("pantry.restore_title") : t("cocktails.restore_title")}
+        subtitle={t("inventory.restore_subtitle", { name: restoreItem?.name ?? "" })}
+        buttonLabel={kind === "pantry" ? t("pantry.restore_button") : t("cocktails.restore_button")}
+        itemName={restoreItem?.name ?? ""}
+        imageUri={restoreItem?.imageSerialized || restoreItem?.imageUrl}
+        fallbackIcon={kind === "pantry" ? "food-variant" : "glass-cocktail"}
+        onClose={() => setRestoreItem(null)}
+        onRestore={(expirationDate) =>
+          restoreItem ? restoreInventoryItem(kind, restoreItem.id, expirationDate) : Promise.resolve()
+        }
+      />
     </View>
   );
 }

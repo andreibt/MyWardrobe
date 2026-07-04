@@ -23,7 +23,6 @@ export default function CocktailsScreen() {
         icon: "glass-cocktail",
         addPath: "/(app)/add-cocktail-item",
         editPath: "/(app)/edit-cocktail-item",
-        restorePath: "/(app)/restore-cocktail-item",
       }}
     />
   );
