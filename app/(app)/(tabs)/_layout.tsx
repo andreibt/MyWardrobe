@@ -2,6 +2,10 @@ import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
+import {
+  stableTabNavigatorProps,
+  stableTabScreenOptions,
+} from "../../../src/lib/navigationOptions";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 
 export default function TabsLayout() {
@@ -11,7 +15,9 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      {...stableTabNavigatorProps}
       screenOptions={{
+        ...stableTabScreenOptions,
         headerShown: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Image,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,8 +11,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DraggableFlatList, {
-  NestableDraggableFlatList,
-  NestableScrollContainer,
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
 
@@ -45,13 +42,6 @@ import { useTryOnConfig } from "../../../src/providers/TryOnConfigProvider";
 import { radius, spacing, typography } from "../../../src/theme/tokens";
 
 const LAYERS: TryOnItem["layer"][] = ["top", "middle", "bottom"];
-// Nestable components call findNodeHandle, which errors on web.
-const ScrollContainer =
-  Platform.OS === "web" ? ScrollView : NestableScrollContainer;
-const DraggableList =
-  Platform.OS === "web"
-    ? DraggableFlatList
-    : (NestableDraggableFlatList as typeof DraggableFlatList);
 
 export default function TryOnScreen() {
   const { user } = useAuth();
@@ -321,7 +311,7 @@ export default function TryOnScreen() {
         ) : null}
       </View>
 
-      <ScrollContainer
+      <ScrollView
         contentContainerStyle={[
           styles.layers,
           { paddingBottom: Math.max(insets.bottom + spacing.xl, spacing.xl) },
@@ -342,7 +332,7 @@ export default function TryOnScreen() {
               {layerItems[layer].length === 0 ? (
                 <Text style={styles.layerEmpty}>{t("try_on.layer_empty")}</Text>
               ) : (
-                <DraggableList
+                <DraggableFlatList
                   data={layerItems[layer]}
                   keyExtractor={(item) => item.id}
                   onDragEnd={handleDragEnd(layer)}
@@ -420,7 +410,7 @@ export default function TryOnScreen() {
             </View>
           )}
         </View>
-      </ScrollContainer>
+      </ScrollView>
     </View>
   );
 }

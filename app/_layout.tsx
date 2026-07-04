@@ -8,6 +8,7 @@ import { I18nProvider } from "../src/i18n/I18nProvider";
 import { TryOnConfigProvider } from "../src/providers/TryOnConfigProvider";
 import { NotificationsProvider } from "../src/providers/NotificationsProvider";
 import { ThemeProvider, useTheme } from "../src/providers/ThemeProvider";
+import { stableStackScreenOptions } from "../src/lib/navigationOptions";
 
 export default function RootLayout() {
   return (
@@ -38,7 +39,7 @@ function ThemedRootStack() {
         style={theme.isDark ? "light" : "dark"}
         backgroundColor={theme.colors.background}
       />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ ...stableStackScreenOptions, headerShown: false }} />
     </>
   );
 }

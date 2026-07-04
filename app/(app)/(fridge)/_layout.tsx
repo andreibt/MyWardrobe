@@ -2,6 +2,10 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
+import {
+  stableTabNavigatorProps,
+  stableTabScreenOptions,
+} from "../../../src/lib/navigationOptions";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 
 export default function FridgeTabsLayout() {
@@ -11,7 +15,9 @@ export default function FridgeTabsLayout() {
 
   return (
     <Tabs
+      {...stableTabNavigatorProps}
       screenOptions={{
+        ...stableTabScreenOptions,
         headerShown: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
@@ -40,6 +46,7 @@ export default function FridgeTabsLayout() {
       <Tabs.Screen
         name="module-home"
         options={{
+          href: "/(app)/(tabs)/home",
           title: t("tabs.home"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home-outline" color={color} size={size} />
@@ -85,6 +92,7 @@ export default function FridgeTabsLayout() {
       <Tabs.Screen
         name="module-settings"
         options={{
+          href: "/(app)/(tabs)/settings",
           title: t("tabs.settings"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="cog-outline" color={color} size={size} />

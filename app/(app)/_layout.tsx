@@ -2,6 +2,7 @@ import { Redirect, Stack } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAuth } from "../../src/providers/AuthProvider";
+import { stableStackScreenOptions } from "../../src/lib/navigationOptions";
 import { colors } from "../../src/theme/tokens";
 
 export default function AppLayout() {
@@ -19,7 +20,7 @@ export default function AppLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{ ...stableStackScreenOptions, headerShown: false }} />;
 }
 
 const styles = StyleSheet.create({

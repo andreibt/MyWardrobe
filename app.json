@@ -9,7 +9,8 @@
     "slug": "PolarNest",
     "android": {
       "googleServicesFile": "./google-services.json",
-      "package": "com.anonymous.mywardrobe"
+      "package": "com.anonymous.mywardrobe",
+      "newArchEnabled": false
     },
     "ios": {
       "googleServicesFile": "./GoogleService-Info.plist",
