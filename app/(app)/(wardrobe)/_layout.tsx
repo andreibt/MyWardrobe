@@ -58,6 +58,7 @@ export default function WardrobeTabsLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
+          headerShown: false,
           title: t("tabs.calendar"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="calendar-month-outline" color={color} size={size} />

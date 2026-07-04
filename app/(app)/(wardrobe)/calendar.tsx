@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useI18n } from "../../../src/i18n/I18nProvider";
@@ -9,30 +9,48 @@ import {
   subscribeToWardrobeCalendarDays,
   type WardrobeCalendarDay,
 } from "../../../src/lib/firestore/wardrobeCalendar";
-import {
-  getWardrobeCalendarWeather,
-  getWeatherSummary,
-  type WeatherDay,
-} from "../../../src/lib/weather";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme, type AppTheme } from "../../../src/providers/ThemeProvider";
 import { spacing, typography } from "../../../src/theme/tokens";
 
-const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const UPCOMING_LIMIT = 5;
+const WEEKDAY_LABEL_DATES = [
+  "2026-07-06",
+  "2026-07-07",
+  "2026-07-08",
+  "2026-07-09",
+  "2026-07-10",
+  "2026-07-11",
+  "2026-07-12",
+];
+const UPCOMING_ICONS: Array<keyof typeof MaterialCommunityIcons.glyphMap> = [
+  "weather-sunny",
+  "weather-night",
+  "weather-sunset",
+  "hanger",
+  "tshirt-crew-outline",
+];
+
+type CalendarCell =
+  | {
+      date: Date;
+      dateKey: string;
+    }
+  | null;
 
 export default function WardrobeCalendarScreen() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { user } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const colors = theme.colors;
+  const locale = language === "ro" ? "ro-RO" : "en-US";
   const [calendarDays, setCalendarDays] = useState<WardrobeCalendarDay[]>([]);
-  const [weatherDays, setWeatherDays] = useState<WeatherDay[]>([]);
-  const [isWeatherLoading, setIsWeatherLoading] = useState(false);
-  const [weatherError, setWeatherError] = useState("");
-  const todayKey = formatDateKey(new Date());
+  const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
+  const today = useMemo(() => new Date(), []);
+  const todayKey = formatDateKey(today);
 
   useEffect(() => {
     if (!user) {
@@ -42,26 +60,36 @@ export default function WardrobeCalendarScreen() {
     return subscribeToWardrobeCalendarDays(user.id, setCalendarDays);
   }, [user]);
 
-  useEffect(() => {
-    loadWeather(false);
-  }, []);
-
   const daysByDate = useMemo(
     () => new Map(calendarDays.map((day) => [day.date, day])),
     [calendarDays]
   );
-  const monthDays = useMemo(() => createMonthDays(new Date()), []);
+  const monthCells = useMemo(() => createMonthCells(visibleMonth), [visibleMonth]);
+  const upcomingOutfits = useMemo(
+    () =>
+      calendarDays
+        .filter((day) => day.date >= todayKey && day.configNames.length > 0)
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(0, UPCOMING_LIMIT),
+    [calendarDays, todayKey]
+  );
+  const weekdayLabels = useMemo(
+    () =>
+      WEEKDAY_LABEL_DATES.map((dateKey) =>
+        new Date(`${dateKey}T00:00:00`).toLocaleDateString(locale, { weekday: "short" })
+      ),
+    [locale]
+  );
 
-  const loadWeather = async (forceRefresh: boolean) => {
-    setIsWeatherLoading(true);
-    setWeatherError("");
-    try {
-      setWeatherDays(await getWardrobeCalendarWeather(forceRefresh));
-    } catch {
-      setWeatherError(t("wardrobe_calendar.weather_error"));
-    } finally {
-      setIsWeatherLoading(false);
-    }
+  const openDay = (date: string) => {
+    router.push({
+      pathname: "/(app)/wardrobe-calendar-day",
+      params: { date },
+    });
+  };
+
+  const showToday = () => {
+    setVisibleMonth(startOfMonth(new Date()));
   };
 
   return (
@@ -71,133 +99,204 @@ export default function WardrobeCalendarScreen() {
           styles.content,
           {
             paddingTop: Math.max(insets.top + spacing.sm, spacing.lg),
-            paddingBottom: Math.max(insets.bottom + 96, 120),
+            paddingBottom: Math.max(insets.bottom + 112, 136),
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View style={styles.titleBlock}>
-            <Text style={styles.title}>{t("wardrobe_calendar.title")}</Text>
-            <Text style={styles.subtitle}>{t("wardrobe_calendar.subtitle")}</Text>
-          </View>
+        <View style={styles.navBar}>
           <Pressable
-            onPress={() => loadWeather(true)}
-            disabled={isWeatherLoading}
-            style={({ pressed }) => [
-              styles.refreshButton,
-              pressed && styles.buttonPressed,
-              isWeatherLoading && styles.disabled,
-            ]}
+            onPress={() => router.push("/(app)/(wardrobe)/module-home")}
+            style={({ pressed }) => [styles.roundButton, pressed && styles.buttonPressed]}
             accessibilityRole="button"
-            accessibilityLabel={t("wardrobe_calendar.refresh_weather")}
+            accessibilityLabel={t("wardrobe_calendar.back")}
           >
-            {isWeatherLoading ? (
-              <ActivityIndicator color={colors.primary} size="small" />
-            ) : (
-              <MaterialCommunityIcons name="refresh" color={colors.primary} size={20} />
-            )}
+            <MaterialCommunityIcons name="arrow-left" color={colors.text} size={20} />
+          </Pressable>
+          <Text style={styles.title} numberOfLines={1}>
+            {t("wardrobe_calendar.title")}
+          </Text>
+          <Pressable
+            onPress={showToday}
+            style={({ pressed }) => [styles.actionButton, pressed && styles.buttonPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t("wardrobe_calendar.today")}
+          >
+            <MaterialCommunityIcons name="calendar-today-outline" color={colors.textMuted} size={19} />
           </Pressable>
         </View>
 
-        <View style={styles.weatherPanel}>
-          <View style={styles.panelTitleRow}>
-            <Text style={styles.sectionTitle}>{t("wardrobe_calendar.weather_title")}</Text>
-            <Text style={styles.sectionHint}>{t("wardrobe_calendar.weather_hint")}</Text>
+        <View style={styles.monthNav}>
+          <View style={styles.monthRow}>
+            <Pressable
+              onPress={() => setVisibleMonth((current) => addMonths(current, -1))}
+              style={({ pressed }) => [styles.monthButton, pressed && styles.buttonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t("wardrobe_calendar.previous_month")}
+            >
+              <MaterialCommunityIcons name="chevron-left" color={colors.textMuted} size={20} />
+            </Pressable>
+            <Text style={styles.monthLabel} numberOfLines={1}>
+              {formatMonthTitle(visibleMonth, locale)}
+            </Text>
+            <Pressable
+              onPress={() => setVisibleMonth((current) => addMonths(current, 1))}
+              style={({ pressed }) => [styles.monthButton, pressed && styles.buttonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t("wardrobe_calendar.next_month")}
+            >
+              <MaterialCommunityIcons name="chevron-right" color={colors.textMuted} size={20} />
+            </Pressable>
           </View>
-          {weatherError ? <Text style={styles.errorText}>{weatherError}</Text> : null}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weatherList}>
-            {weatherDays.map((day) => (
-              <View key={day.date} style={styles.weatherCard}>
-                <Text style={styles.weatherDay}>{formatShortWeekday(day.date)}</Text>
-                <MaterialCommunityIcons
-                  name={getWeatherIcon(day.weatherCode)}
-                  color={colors.primary}
-                  size={22}
-                />
-                <Text style={styles.weatherTemp}>
-                  {Math.round(day.max)}° / {Math.round(day.min)}°
-                </Text>
-                <Text style={styles.weatherMeta}>{getWeatherSummary(day.weatherCode)}</Text>
-                <Text style={styles.weatherMeta}>{day.precipitation}%</Text>
-              </View>
-            ))}
-            {weatherDays.length === 0 && !isWeatherLoading ? (
-              <Text style={styles.emptyText}>{t("wardrobe_calendar.weather_empty")}</Text>
-            ) : null}
-          </ScrollView>
+
+          <View style={styles.yearRow}>
+            <Pressable
+              onPress={() => setVisibleMonth((current) => addYears(current, -1))}
+              style={({ pressed }) => [styles.yearButton, pressed && styles.buttonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t("wardrobe_calendar.previous_year")}
+            >
+              <MaterialCommunityIcons name="chevron-left" color={colors.muted} size={16} />
+            </Pressable>
+            <Text style={styles.yearLabel}>{visibleMonth.getFullYear()}</Text>
+            <Pressable
+              onPress={() => setVisibleMonth((current) => addYears(current, 1))}
+              style={({ pressed }) => [styles.yearButton, pressed && styles.buttonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t("wardrobe_calendar.next_year")}
+            >
+              <MaterialCommunityIcons name="chevron-right" color={colors.muted} size={16} />
+            </Pressable>
+          </View>
         </View>
 
-        <View style={styles.calendarPanel}>
-          <Text style={styles.monthTitle}>{formatMonthTitle(new Date())}</Text>
-          <View style={styles.weekRow}>
-            {WEEKDAY_LABELS.map((label) => (
-              <Text key={label} style={styles.weekday}>
-                {label}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.monthGrid}>
-            {monthDays.map((day) => {
-              const dayPlan = daysByDate.get(day.dateKey);
-              const isToday = day.dateKey === todayKey;
-              const configNames = dayPlan?.configNames ?? [];
-              const hasConfigs = configNames.length > 0;
+        <View style={styles.weekdayRow}>
+          {weekdayLabels.map((label) => (
+            <Text key={label} style={styles.weekday}>
+              {label}
+            </Text>
+          ))}
+        </View>
 
-              return (
-                <Pressable
-                  key={day.dateKey}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(app)/wardrobe-calendar-day",
-                      params: { date: day.dateKey },
-                    })
-                  }
-                  style={({ pressed }) => [
-                    styles.dayCell,
-                    !day.inCurrentMonth && styles.dayCellMuted,
-                    isToday && styles.dayCellToday,
-                    pressed && styles.buttonPressed,
-                  ]}
-                >
-                  <Text style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
-                    {day.date.getDate()}
+        <View style={styles.daysGrid}>
+          {monthCells.map((cell, index) => {
+            if (!cell) {
+              return <View key={`empty-${index}`} style={styles.emptyCell} />;
+            }
+
+            const dayPlan = daysByDate.get(cell.dateKey);
+            const configNames = dayPlan?.configNames ?? [];
+            const hasConfigs = configNames.length > 0;
+            const isToday = cell.dateKey === todayKey;
+
+            return (
+              <Pressable
+                key={cell.dateKey}
+                onPress={() => openDay(cell.dateKey)}
+                style={({ pressed }) => [
+                  styles.dayCell,
+                  isToday && styles.dayCellToday,
+                  hasConfigs && styles.dayCellHasOutfit,
+                  pressed && styles.dayCellPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("wardrobe_calendar.open_day", {
+                  date: formatUpcomingDate(cell.dateKey, locale),
+                })}
+              >
+                <Text style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
+                  {cell.date.getDate()}
+                </Text>
+                {hasConfigs ? (
+                  <Text style={styles.outfitLabel} numberOfLines={2}>
+                    {summarizeConfigs(configNames)}
                   </Text>
-                  <View style={styles.previewRow}>
-                    {hasConfigs ? (
-                      <View style={styles.previewDot}>
-                        <MaterialCommunityIcons name="hanger" color={colors.primary} size={15} />
-                      </View>
-                    ) : null}
-                  </View>
-                  {hasConfigs ? (
-                    <Text style={styles.configPreview} numberOfLines={1}>
-                      {configNames.length}
-                    </Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.sectionLabel}>
+          <Text style={styles.sectionTitle}>{t("wardrobe_calendar.upcoming_outfits")}</Text>
+        </View>
+
+        <View style={styles.upcomingList}>
+          {upcomingOutfits.length === 0 ? (
+            <Text style={styles.emptyText}>{t("wardrobe_calendar.no_upcoming_outfits")}</Text>
+          ) : (
+            upcomingOutfits.map((day, index) => (
+              <Pressable
+                key={day.id}
+                onPress={() => openDay(day.date)}
+                style={({ pressed }) => [styles.upcomingCard, pressed && styles.buttonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t("wardrobe_calendar.open_day", {
+                  date: formatUpcomingDate(day.date, locale),
+                })}
+              >
+                <View style={styles.upcomingIcon}>
+                  <MaterialCommunityIcons
+                    name={UPCOMING_ICONS[index] ?? "hanger"}
+                    color={colors.muted}
+                    size={18}
+                  />
+                </View>
+                <View style={styles.upcomingInfo}>
+                  <Text style={styles.upcomingDate}>{formatUpcomingDate(day.date, locale)}</Text>
+                  <Text style={styles.upcomingDescription} numberOfLines={1}>
+                    {summarizeConfigs(day.configNames)}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" color={colors.textMuted} size={18} />
+              </Pressable>
+            ))
+          )}
         </View>
       </ScrollView>
+
+      <Pressable
+        onPress={() => openDay(todayKey)}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: Math.max(insets.bottom + 76, 92) },
+          pressed && styles.fabPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={t("wardrobe_calendar.add_outfit")}
+      >
+        <MaterialCommunityIcons name="plus" color={colors.logoTint} size={26} />
+      </Pressable>
     </View>
   );
 }
 
-function createMonthDays(anchor: Date) {
-  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-  const start = new Date(first);
-  start.setDate(first.getDate() - first.getDay());
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
+function createMonthCells(anchor: Date): CalendarCell[] {
+  const first = startOfMonth(anchor);
+  const leadingBlankCount = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const blanks = Array.from({ length: leadingBlankCount }, () => null);
+  const days = Array.from({ length: daysInMonth }, (_, index) => {
+    const date = new Date(first.getFullYear(), first.getMonth(), index + 1);
     return {
       date,
       dateKey: formatDateKey(date),
-      inCurrentMonth: date.getMonth() === anchor.getMonth(),
     };
   });
+
+  return [...blanks, ...days];
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function addMonths(date: Date, amount: number) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+}
+
+function addYears(date: Date, amount: number) {
+  return new Date(date.getFullYear() + amount, date.getMonth(), 1);
 }
 
 function formatDateKey(date: Date) {
@@ -207,108 +306,264 @@ function formatDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function formatMonthTitle(date: Date) {
-  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+function formatMonthTitle(date: Date, locale: string) {
+  return date.toLocaleDateString(locale, { month: "long", year: "numeric" });
 }
 
-function formatShortWeekday(dateKey: string) {
-  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, { weekday: "short" });
+function formatUpcomingDate(dateKey: string, locale: string) {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(locale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-function getWeatherIcon(code: number): keyof typeof MaterialCommunityIcons.glyphMap {
-  if (code === 0) return "weather-sunny";
-  if ([1, 2, 3].includes(code)) return "weather-partly-cloudy";
-  if ([45, 48].includes(code)) return "weather-fog";
-  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "weather-rainy";
-  if (code >= 71 && code <= 77) return "weather-snowy";
-  if (code >= 95) return "weather-lightning-rainy";
-  return "weather-cloudy";
+function summarizeConfigs(configNames: string[]) {
+  if (configNames.length <= 2) {
+    return configNames.join(", ");
+  }
+
+  return `${configNames.slice(0, 2).join(", ")} +${configNames.length - 2}`;
 }
 
 const createStyles = (theme: AppTheme) => {
   const colors = theme.colors;
   const primaryDim = theme.isDark ? "rgba(0, 212, 255, 0.15)" : "rgba(22, 27, 34, 0.08)";
+  const pressScale = [{ scale: 0.97 }];
 
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    content: { paddingHorizontal: 20, gap: spacing.md },
-    header: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-    titleBlock: { flex: 1 },
-    title: { color: colors.text, fontSize: 26, lineHeight: 32, fontWeight: "700" },
-    subtitle: { color: colors.textMuted, ...typography.body },
-    refreshButton: {
-      width: 42,
-      height: 42,
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      paddingHorizontal: 20,
+    },
+    navBar: {
+      minHeight: 44,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      marginBottom: spacing.xs,
+    },
+    roundButton: {
+      width: 36,
+      height: 36,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 21,
+      borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.border,
-      backgroundColor: colors.surface2,
+      backgroundColor: "transparent",
     },
-    weatherPanel: {
-      gap: spacing.sm,
-      padding: spacing.md,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface2,
-    },
-    panelTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
-    sectionTitle: { color: colors.text, ...typography.h2 },
-    sectionHint: { color: colors.textMuted, ...typography.caption },
-    weatherList: { gap: spacing.xs },
-    weatherCard: {
-      width: 86,
-      minHeight: 112,
+    actionButton: {
+      width: 36,
+      height: 36,
       alignItems: "center",
-      gap: 4,
-      padding: spacing.sm,
-      borderRadius: 14,
-      backgroundColor: colors.surface3,
+      justifyContent: "center",
+      borderRadius: 18,
+      backgroundColor: "transparent",
     },
-    weatherDay: { color: colors.text, ...typography.caption, fontWeight: "700" },
-    weatherTemp: { color: colors.text, ...typography.caption, fontWeight: "700" },
-    weatherMeta: { color: colors.textMuted, fontSize: 10, lineHeight: 13, fontWeight: "600" },
-    calendarPanel: {
+    title: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 20,
+      lineHeight: 26,
+      fontWeight: "700",
+    },
+    monthNav: {
+      gap: 6,
+      paddingTop: spacing.xs,
+      paddingBottom: spacing.sm,
+    },
+    monthRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: spacing.sm,
-      padding: spacing.md,
+    },
+    monthButton: {
+      width: 32,
+      height: 32,
+      alignItems: "center",
+      justifyContent: "center",
       borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface2,
     },
-    monthTitle: { color: colors.text, ...typography.h2 },
-    weekRow: { flexDirection: "row" },
-    weekday: { flex: 1, color: colors.textMuted, textAlign: "center", ...typography.caption, fontWeight: "700" },
-    monthGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-    dayCell: {
-      width: "13.4%",
-      minHeight: 78,
+    monthLabel: {
+      minWidth: 160,
+      flex: 1,
+      color: colors.text,
+      fontSize: 17,
+      lineHeight: 23,
+      fontWeight: "600",
+      textAlign: "center",
+      textTransform: "capitalize",
+    },
+    yearRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+    },
+    yearButton: {
+      width: 28,
+      height: 28,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: "transparent",
+    },
+    yearLabel: {
+      minWidth: 60,
+      color: colors.textMuted,
+      ...typography.caption,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    weekdayRow: {
+      flexDirection: "row",
+      marginBottom: 4,
+    },
+    weekday: {
+      flex: 1,
+      paddingVertical: 6,
+      color: colors.muted,
+      fontSize: 11,
+      lineHeight: 14,
+      fontWeight: "600",
+      textAlign: "center",
+      textTransform: "uppercase",
+    },
+    daysGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
       gap: 4,
-      padding: 6,
+    },
+    emptyCell: {
+      width: "13.42%",
+      aspectRatio: 1,
+      borderRadius: 10,
+    },
+    dayCell: {
+      width: "13.42%",
+      aspectRatio: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 2,
+      padding: 2,
       borderRadius: 10,
       borderWidth: 1,
       borderColor: colors.border,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surface2,
     },
-    dayCellMuted: { opacity: 0.45 },
-    dayCellToday: { borderColor: colors.primary, backgroundColor: primaryDim },
-    dayNumber: { color: colors.text, ...typography.caption, fontWeight: "700" },
-    dayNumberToday: { color: colors.primary },
-    previewRow: { minHeight: 22, alignItems: "center", justifyContent: "center" },
-    previewDot: {
-      width: 24,
-      height: 24,
+    dayCellToday: {
+      borderColor: colors.primary,
+    },
+    dayCellHasOutfit: {
+      borderColor: colors.primary,
+      backgroundColor: primaryDim,
+    },
+    dayCellPressed: {
+      opacity: 0.9,
+      transform: pressScale,
+    },
+    dayNumber: {
+      color: colors.text,
+      fontSize: 13,
+      lineHeight: 15,
+      fontWeight: "700",
+    },
+    dayNumberToday: {
+      color: colors.primary,
+    },
+    outfitLabel: {
+      maxWidth: "100%",
+      color: colors.primary,
+      fontSize: 7,
+      lineHeight: 8,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    sectionLabel: {
+      paddingTop: 20,
+      paddingBottom: 10,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: 16,
+      lineHeight: 22,
+      fontWeight: "600",
+    },
+    upcomingList: {
+      gap: spacing.xs,
+    },
+    upcomingCard: {
+      minHeight: 58,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 10,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+    },
+    upcomingIcon: {
+      width: 36,
+      height: 36,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 12,
+      borderRadius: 6,
       backgroundColor: colors.surface3,
     },
-    configPreview: { color: colors.textMuted, fontSize: 10, lineHeight: 12, fontWeight: "700", textAlign: "center" },
-    emptyText: { color: colors.textMuted, ...typography.caption },
-    errorText: { color: colors.danger, ...typography.caption },
-    buttonPressed: { opacity: 0.85 },
-    disabled: { opacity: 0.55 },
+    upcomingInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+    upcomingDate: {
+      color: colors.text,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
+    },
+    upcomingDescription: {
+      color: colors.textMuted,
+      fontSize: 11,
+      lineHeight: 15,
+      fontWeight: "500",
+    },
+    emptyText: {
+      color: colors.textMuted,
+      ...typography.caption,
+    },
+    fab: {
+      position: "absolute",
+      right: 20,
+      width: 52,
+      height: 52,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 26,
+      backgroundColor: colors.primary,
+      shadowColor: colors.shadow,
+      shadowOpacity: theme.isDark ? 0.34 : 0.16,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 6,
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    fabPressed: {
+      opacity: 0.9,
+      transform: [{ scale: 0.94 }],
+    },
   });
 };

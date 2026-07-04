@@ -11,7 +11,6 @@
 PolarNest/
   screens/
     Login.tsx              # Login / Register screen
-    Onboarding.tsx         # Tutorial flow (3 steps)
     Home.tsx               # Dashboard with stats, modules, recent activity
     WardrobeLibrary.tsx    # Wardrobe grid / list view
     WardrobeEdit.tsx       # Add / Edit wardrobe item

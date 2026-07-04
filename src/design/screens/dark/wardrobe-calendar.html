@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Wardrobe Calendar — PolarNest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#08090e; --s1:#111318; --s2:#1a1d23; --s3:#242830; --primary:#00d4ff; --pdim:rgba(0,212,255,0.15); --secondary:#00e676; --sdim:rgba(0,230,118,0.12); --text:#f0f2f5; --text2:#8b8fa3; --muted:#5a5e6e; --border:#2a2e38; --warning:#ffa502; --radius:10px; --radius-lg:16px; --font:'Inter',system-ui,-apple-system,sans-serif; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html,body { width:100%; min-height:100vh; background:var(--bg); font:400 15px/1.6 var(--font); color:var(--text); -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+    .phone { max-width:390px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; background:var(--bg); position:relative; }
+    .status-bar { display:flex; justify-content:space-between; padding:12px 20px 6px; font-size:12px; font-weight:600; flex-shrink:0; }
+    .nav-bar { display:flex; align-items:center; padding:0 20px 8px; gap:8px; flex-shrink:0; }
+    .nav-bar .back-btn { width:36px;height:36px; border-radius:50%; border:1px solid var(--border); background:transparent; font-size:18px; cursor:pointer; display:grid; place-items:center; color:var(--text); text-decoration:none; transition:background 0.15s; }
+    .nav-bar .back-btn:hover { background:var(--s2); }
+    .nav-bar h1 { flex:1; font-size:20px; font-weight:700; letter-spacing:-0.02em; }
+    .nav-bar .action { width:36px;height:36px; border-radius:50%; border:0; background:transparent; color:var(--text2); font-size:18px; cursor:pointer; display:grid; place-items:center; }
+    .content { flex:1; overflow-y:auto; padding:0 20px 100px; }
+    .month-nav { display:flex; flex-direction:column; gap:6px; padding:8px 0 12px; }
+    .month-nav .nav-row { display:flex; align-items:center; justify-content:space-between; }
+    .month-nav .nav-row .month { font-size:17px; font-weight:600; min-width:160px; text-align:center; }
+    .month-nav .nav-row button { width:32px;height:32px; border-radius:50%; border:1px solid var(--border); background:var(--s2); color:var(--text2); cursor:pointer; display:grid; place-items:center; font-size:14px; transition:background 0.15s; font-family:var(--font); }
+    .month-nav .nav-row button:hover { background:var(--s3); }
+    .month-nav .year-row { display:flex; align-items:center; justify-content:center; gap:12px; }
+    .month-nav .year-row .year { font-size:13px; font-weight:500; color:var(--text2); min-width:60px; text-align:center; }
+    .month-nav .year-row button { width:28px;height:28px; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; display:grid; place-items:center; font-size:12px; transition:background 0.15s; font-family:var(--font); }
+    .month-nav .year-row button:hover { background:var(--s2); color:var(--text2); }
+    .weekday-row { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; margin-bottom:4px; }
+    .weekday-row span { font-size:11px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; padding:6px 0; }
+    .days-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .day-cell { aspect-ratio:1; border-radius:var(--radius); background:var(--s2); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s; padding:2px; position:relative; gap:1px; min-height:0; }
+    .day-cell:active { transform:scale(0.95); }
+    .day-cell.other-month { opacity:0.3; pointer-events:none; }
+    .day-cell.today { border-color:var(--primary); }
+    .day-cell.has-outfit { background:var(--pdim); border-color:var(--primary); }
+    .day-cell .day-num { font-size:13px; font-weight:600; line-height:1; }
+    .day-cell .outfit-label { font-size:7px; color:var(--primary); font-weight:500; line-height:1.1; text-align:center; overflow:hidden; text-overflow:ellipsis; max-width:100%; word-break:break-word; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical; }
+    .day-cell .outfit-dot { width:4px;height:4px; border-radius:50%; background:var(--primary); flex-shrink:0; }
+    .day-cell.today .day-num { color:var(--primary); }
+    .day-cell.empty { background:transparent; border:1px solid transparent; cursor:default; }
+    .section-label { display:flex; justify-content:space-between; align-items:center; padding:20px 0 10px; }
+    .section-label h2 { font-size:16px; font-weight:600; }
+    .section-label a { font-size:12px; color:var(--text2); text-decoration:none; }
+    .mini-list { display:flex; flex-direction:column; gap:8px; }
+    .mini-card { display:flex; align-items:center; gap:10px; background:var(--s2); border-radius:var(--radius); padding:10px 12px; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s; }
+    .mini-card:active { transform:scale(0.97); }
+    .mini-card .mc-img { width:36px;height:36px; border-radius:6px; background:var(--s3); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); }
+    .mini-card .mc-info { flex:1; min-width:0; }
+    .mini-card .mc-name { font-weight:600; font-size:13px; }
+    .mini-card .mc-desc { font-size:11px; color:var(--text2); }
+    .tab-bar { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:390px; display:flex; justify-content:space-around; align-items:center; padding:8px 0 max(env(safe-area-inset-bottom,8px),8px); background:rgba(17,19,24,0.96); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); }
+    .tab-item { display:flex; flex-direction:column; align-items:center; gap:2px; text-decoration:none; color:var(--muted); font-size:10px; font-weight:500; padding:4px 12px; cursor:pointer; transition:color 0.15s; }
+    .tab-item .tab-icon { font-size:20px; line-height:1; }
+    .tab-item.active { color:var(--primary); }
+    .fab { position:fixed; bottom:76px; right:calc(50% - 175px); width:52px;height:52px; border-radius:50%; background:var(--primary); color:#08090e; border:0; font-size:26px; cursor:pointer; box-shadow:0 12px 40px rgba(0,0,0,0.6); display:grid; place-items:center; z-index:10; text-decoration:none; transition:transform 0.15s; }
+    .fab:active { transform:scale(0.92); }
+    @media(min-width:430px){ .fab{right:calc(50% - 187px)} }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="status-bar"><span>9:41</span><span>&#9679;&#9679;&#9679;</span></div>
+    <div class="nav-bar">
+      <a class="back-btn" href="wardrobe-dark.html">&#8592;</a>
+      <h1>Wardrobe Calendar</h1>
+      <button class="action">&#8942;</button>
+    </div>
+    <div class="content">
+      <div class="month-nav">
+        <div class="nav-row">
+          <button id="prevMonth">&#8249;</button>
+          <span class="month" id="monthLabel">July 2026</span>
+          <button id="nextMonth">&#8250;</button>
+        </div>
+        <div class="year-row">
+          <button id="prevYear">&#8249;</button>
+          <span class="year" id="yearLabel">2026</span>
+          <button id="nextYear">&#8250;</button>
+        </div>
+      </div>
+      <div class="weekday-row">
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+      </div>
+      <div class="days-grid" id="calendarGrid"></div>
+
+      <div class="section-label">
+        <h2>Upcoming outfits</h2>
+        <a href="day-detail.html">See all</a>
+      </div>
+      <div class="mini-list">
+        <div class="mini-card" onclick="location.href='day-detail.html'">
+          <div class="mc-img">&#127774;</div>
+          <div class="mc-info"><div class="mc-name">Mon, Jul 6</div><div class="mc-desc">Casual Friday — Denim jacket, sneakers</div></div>
+          <span style="font-size:14px;color:var(--text2)">&#8250;</span>
+        </div>
+        <div class="mini-card" onclick="location.href='day-detail.html'">
+          <div class="mc-img">&#127769;</div>
+          <div class="mc-info"><div class="mc-name">Wed, Jul 8</div><div class="mc-desc">Client Meeting — Blazer, Oxford shirt</div></div>
+          <span style="font-size:14px;color:var(--text2)">&#8250;</span>
+        </div>
+        <div class="mini-card" onclick="location.href='day-detail.html'">
+          <div class="mc-img">&#127761;</div>
+          <div class="mc-info"><div class="mc-name">Fri, Jul 10</div><div class="mc-desc">Weekend Getaway — Layers, comfortable</div></div>
+          <span style="font-size:14px;color:var(--text2)">&#8250;</span>
+        </div>
+      </div>
+    </div>
+    <nav class="tab-bar">
+      <a class="tab-item" href="home-dark.html"><span class="tab-icon">&#9650;</span>Home</a>
+      <a class="tab-item active" href="#"><span class="tab-icon">&#9825;</span>Wardrobe</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#9733;</span>Fridge</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#8981;</span>Search</a>
+      <a class="tab-item" href="#"><span class="tab-icon">&#9881;</span>Settings</a>
+    </nav>
+    <a class="fab" href="day-detail.html">+</a>
+  </div>
+  <script>
+    (function() {
+      var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      var outfitsByDate = {
+        '2026-7-1':'New Year','2026-7-4':'Casual','2026-7-6':'Casual Fri','2026-7-8':'Client Mtg','2026-7-10':'Weekend',
+        '2026-7-14':'Date Night','2026-7-16':'Brunch','2026-7-18':'Office','2026-7-20':'Gym','2026-7-22':'Casual',
+        '2026-7-24':'Dinner','2026-7-26':'Travel','2026-7-28':'Lounge','2026-7-30':'Formal','2026-7-31':'Party',
+        '2026-8-5':'Casual','2026-8-12':'Meeting','2026-8-19':'Date Night','2026-8-26':'Travel',
+        '2026-6-3':'Brunch','2026-6-10':'Office','2026-6-17':'Casual','2026-6-24':'Dinner'
+      };
+      var today = new Date();
+      var curMonth = today.getMonth();
+      var curYear = today.getFullYear();
+      var grid = document.getElementById('calendarGrid');
+      var monthLabel = document.getElementById('monthLabel');
+      var yearLabel = document.getElementById('yearLabel');
+      var prevMonthBtn = document.getElementById('prevMonth');
+      var nextMonthBtn = document.getElementById('nextMonth');
+      var prevYearBtn = document.getElementById('prevYear');
+      var nextYearBtn = document.getElementById('nextYear');
+
+      function render() {
+        grid.innerHTML = '';
+        monthLabel.textContent = MONTHS[curMonth] + ' ' + curYear;
+        yearLabel.textContent = String(curYear);
+        var firstDay = new Date(curYear, curMonth, 1).getDay();
+        firstDay = firstDay === 0 ? 6 : firstDay - 1;
+        var daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+        for (var i = 0; i < firstDay; i++) { var d = document.createElement('div'); d.className = 'day-cell empty'; grid.appendChild(d); }
+        for (var day = 1; day <= daysInMonth; day++) {
+          var c = document.createElement('div');
+          c.className = 'day-cell';
+          var key = curYear + '-' + (curMonth + 1) + '-' + day;
+          var isToday = (curYear === today.getFullYear() && curMonth === today.getMonth() && day === today.getDate());
+          if (isToday) c.classList.add('today');
+          if (outfitsByDate[key]) { c.classList.add('has-outfit'); c.innerHTML = '<span class="day-num">'+day+'</span><span class="outfit-label">'+outfitsByDate[key]+'</span>'; }
+          else { c.innerHTML = '<span class="day-num">'+day+'</span>'; }
+          c.addEventListener('click', function(d) { return function() { location.href = 'day-detail.html?day=' + d; }; }(day));
+          grid.appendChild(c);
+        }
+      }
+
+      prevMonthBtn.addEventListener('click', function() { curMonth--; if (curMonth < 0) { curMonth = 11; curYear--; } render(); });
+      nextMonthBtn.addEventListener('click', function() { curMonth++; if (curMonth > 11) { curMonth = 0; curYear++; } render(); });
+      prevYearBtn.addEventListener('click', function() { curYear--; render(); });
+      nextYearBtn.addEventListener('click', function() { curYear++; render(); });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

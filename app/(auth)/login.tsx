@@ -96,7 +96,7 @@ export default function LoginScreen() {
       } else {
         await signIn(data.email, data.password);
       }
-      router.replace("/(app)/tutorial");
+      router.replace("/(app)/(tabs)/home");
     } catch (error) {
       setLoginError(isRegistering ? getRegistrationErrorKey(error) : getLoginErrorKey(error));
     }

@@ -5,8 +5,8 @@
       "expo-router",
       "expo-notifications"
     ],
-    "name": "MyWardrobe",
-    "slug": "MyWardrobe",
+    "name": "PolarNest",
+    "slug": "PolarNest",
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.anonymous.mywardrobe"
@@ -15,9 +15,17 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.anonymous.mywardrobe",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow MyWardrobe to choose photos from your library for wardrobe and fridge items.",
-        "NSPhotoLibraryAddUsageDescription": "Allow MyWardrobe to save updated item photos to your library when needed."
+        "NSPhotoLibraryUsageDescription": "Allow PolarNest to choose photos from your library for wardrobe and fridge items.",
+        "NSPhotoLibraryAddUsageDescription": "Allow PolarNest to save updated item photos to your library when needed.",
+        "ITSAppUsesNonExemptEncryption": false
       }
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "11359ff5-a1af-4016-9026-030b337877b8"
+      }
+    },
+    "owner": "polaria-labs"
   }
 }
